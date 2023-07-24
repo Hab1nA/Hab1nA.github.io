@@ -106,6 +106,6 @@ var ABOUT = {
 	"意见反馈" : ["QQ:2321403454"],
 	"框架" : ["<a href='https://github.com/yuehaowang/irmap' target='_blank'>irmap</a>", "Bootstrap", "百度地图"],
 	"备注" : ["地图性能比较差，请耐心等待加载","(免费的能用就不错了要啥自行车😅)","少部分同学的大学所在校区尚不明确，后续将会更正", "歌是我随便选的"],
-	"版本" : ["23.7.24 V0.4.1(试运行)"],
+	"版本" : ["23.7.24 V1.0.0"],
 	"源代码": ["<a href='https://github.com/Hab1nA/Hab1nA.github.io' target='_blank'>Github</a"]
 };

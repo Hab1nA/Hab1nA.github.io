@@ -1,8 +1,4 @@
 <!DOCTYPE html>
-<header>
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css">
-	<script src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script>
-</header>
 <html>
 <head>
 	<meta charset="utf-8">
@@ -43,13 +39,22 @@
 			padding: 20px 8%;
 			overflow: auto;
 		}
+
+		#aplayer {
+			margin-bottom: 0px;
+			margin-left: 0px;
+		}
 	</style>
+
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
 </head>
 <body>
 
 	<script>
 		function showMessage() {
-            alert("🤣👉没用的，我做不来搜索👈🤣");
+			alert("🤣👉没用的，我做不来搜索👈🤣");
 		}
 	</script>
 
@@ -111,15 +116,12 @@
 		</div>
 	</div>
 
-	<div id="aplayer" class="aplayer" data-order="random" data-id="452804846" data-server="netease" data-type="song" data-fixed="false" data-autoplay="true" data-volume="0.6"></div>
-
 	<div id="container"></div>
+
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css">
+	<script src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script>
+	<div id="aplayer" class="aplayer" data-autoplay="false" data-id="452804846" data-server="netease" data-type="song" data-fixed="true" data-listfolded="true" data-order="random" data-theme="#F58EA8"></div>
+	<script src="https://unpkg.com/meting@1.2.0/dist/Meting.min.js"></script>
+
 </body>
 </html >
-			<footer>
-				<!-- aplayer -->
-				<script src="https://cdn.jsdelivr.net/npm/meting@1.2.0/dist/Meting.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/gh/kaygb/kaygb@master/js/v3.js"></script>
-	<script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/gh/kaygb/kaygb@master/layer/layer.js"></script>
-	</footer>
