@@ -12,6 +12,7 @@
 	<link href="css/bootstrap.min.css" rel="stylesheet">
 
 	<script type="text/javascript" src="https://api.map.baidu.com/api?v=2.0&ak=qIQKvnHPV5ViIGGsqenmbQghsR9GA8dO"></script>
+
 	<script src="./js/jquery.min.js"></script>
 	<script src="./js/bootstrap.min.js"></script>
 
@@ -42,10 +43,15 @@
 			padding: 20px 8%;
 			overflow: auto;
 		}
-
 	</style>
 </head>
 <body>
+
+	<script>
+		function showMessage() {
+            alert("🤣👉没用的，我做不来搜索👈🤣");
+		}
+	</script>
 
 	<nav class="navbar navbar-default" id="navbar">
 		<div class="container-fluid">
@@ -62,6 +68,8 @@
 
 			<div class="collapse navbar-collapse" id="navbar_collapse">
 				<form class="navbar-form navbar-right" id="navbar-right">
+					<input type="search" name="txtSearch" id="txtSearch">
+					<button onclick="showMessage()">搜索</button>
 					<button type="button" class="btn btn-danger" data-toggle="modal" data-target="#about_modal"><span class="glyphicon glyphicon-info-sign"></span> 关于</button>
 					<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#statistics_modal"><span class="glyphicon glyphicon-inbox"></span> 数据统计</button>
 				</form>
@@ -103,15 +111,15 @@
 		</div>
 	</div>
 
-	<div id="aplayer" class="aplayer" data-order="random" data-id="452804846" data-server="netease" data-type="song" data-fixed="true" data-autoplay="true" data-volume="0.6" ></div>
+	<div id="aplayer" class="aplayer" data-order="random" data-id="452804846" data-server="netease" data-type="song" data-fixed="true" data-autoplay="true" data-volume="0.6"></div>
 
 	<div id="container"></div>
 </body>
-</html>
-<footer>
-	<!-- aplayer -->
-	<script src="https://cdn.jsdelivr.net/npm/meting@1.2.0/dist/Meting.min.js"></script>
+</html >
+			<footer>
+				<!-- aplayer -->
+				<script src="https://cdn.jsdelivr.net/npm/meting@1.2.0/dist/Meting.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/gh/kaygb/kaygb@master/js/v3.js"></script>
 	<script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/gh/kaygb/kaygb@master/layer/layer.js"></script>
-</footer>
+	</footer>
