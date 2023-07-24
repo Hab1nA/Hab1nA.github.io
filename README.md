@@ -9,7 +9,7 @@
  width:48pt">
  </colgroup><tbody><tr height="19" style="height:13.9pt">
   <td colspan="2" height="19" class="xl65" width="130" style="height:13.9pt;width:96pt">省（国）/市</td>
-  <td class="xl65" width="186" style="border-left:none;width:140pt">大学</td>
+  <td class="xl65" width="250" style="border-left:none;width:140pt">大学</td>
   <td colspan="3" class="xl65" width="195" style="border-left:none;width:144pt">　</td>
  </tr>
  <tr height="19" style="height:13.9pt">
