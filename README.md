@@ -81,7 +81,7 @@
   <td height="19" class="xl68" style="height:13.9pt;border-top:none;border-left:
   none">南方科技大学</td>
   <td class="xl69" style="border-top:none;border-left:none">王彦儒</td>
-  <td class="xl69" style="border-top:none;border-left:none">陈彦兴</td>
+  <td class="xl69" style="border-top:none;border-left:none">　</td>
   <td class="xl66" style="border-top:none;border-left:none">　</td>
  </tr>
  <tr height="19" style="height:13.9pt">
@@ -116,14 +116,14 @@
  <tr height="19" style="height:13.9pt">
   <td rowspan="2" height="38" class="xl65" style="height:27.8pt;border-top:none">四川</td>
   <td rowspan="2" class="xl67" style="border-top:none">成都</td>
-  <td class="xl68" style="border-top:none;border-left:none">四川大学</td>
+  <td class="xl68" style="border-top:none;border-left:none">四川大学（江安校区）</td>
   <td class="xl69" style="border-top:none;border-left:none">钟思雨</td>
   <td class="xl66" style="border-top:none;border-left:none">　</td>
   <td class="xl66" style="border-top:none;border-left:none">　</td>
  </tr>
  <tr height="19" style="height:13.9pt">
   <td height="19" class="xl68" style="height:13.9pt;border-top:none;border-left:
-  none">电子科技大学（清水河校区<span style="display:none">）</span></td>
+  none">电子科技大学（清水河校区）</span></td>
   <td class="xl69" style="border-top:none;border-left:none">潘思颖</td>
   <td class="xl69" style="border-top:none;border-left:none">林晟周</td>
   <td class="xl66" style="border-top:none;border-left:none">　</td>
@@ -253,9 +253,9 @@
 让我当了一回无情填数据机器
 
 
-感谢yuehao大佬的教程https://github.com/yuehaowang/irmap
+感谢yuehao大佬：https://github.com/yuehaowang/irmap
 
-接下来是他的教程：
+这里是他的教程：
 
 # irmap
 
@@ -338,3 +338,7 @@ var ABOUT = {
 ## 开源协议
 
 GPL协议（协议详情见：[维基百科](https://en.wikipedia.org/wiki/GNU_General_Public_License)）
+
+## 音乐播放器（这不是教程内容）
+
+来源于此：https://blog.csdn.net/weixin_44081211/article/details/124574902
