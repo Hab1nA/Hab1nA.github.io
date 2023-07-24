@@ -125,7 +125,14 @@
   <td height="19" class="xl68" style="height:13.9pt;border-top:none;border-left:
   none">电子科技大学（清水河校区）</span></td>
   <td class="xl69" style="border-top:none;border-left:none">潘思颖</td>
+  <td class="xl69" style="border-top:none;border-left:none">　</td>
+  <td class="xl66" style="border-top:none;border-left:none">　</td>
+ </tr>
+ <tr height="19" style="height:13.9pt">
+  <td height="19" class="xl68" style="height:13.9pt;border-top:none;border-left:
+  none">电子科技大学（沙河校区）</span></td>
   <td class="xl69" style="border-top:none;border-left:none">林晟周</td>
+  <td class="xl69" style="border-top:none;border-left:none">　</td>
   <td class="xl66" style="border-top:none;border-left:none">　</td>
  </tr>
  <tr height="19" style="height:13.9pt">
