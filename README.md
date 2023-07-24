@@ -253,7 +253,7 @@
 让我当了一回无情填数据机器
 
 
-感谢yuehao大佬：https://github.com/yuehaowang/irmap
+感谢Yuehao大佬：https://github.com/yuehaowang/irmap
 
 这里是他的教程：
 
