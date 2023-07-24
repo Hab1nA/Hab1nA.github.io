@@ -6,7 +6,7 @@
  width:48pt">
  <col width="186" style="mso-width-source:userset;mso-width-alt:6348;width:140pt">
  <col width="65" span="3" style="mso-width-source:userset;mso-width-alt:2201;
- width:48pt">
+ width:480pt">
  </colgroup><tbody><tr height="19" style="height:13.9pt">
   <td colspan="2" height="19" class="xl65" width="130" style="height:13.9pt;width:96pt">省（国）/市</td>
   <td class="xl65" width="186" style="border-left:none;width:140pt">大学</td>
@@ -226,103 +226,6 @@
   <td class="xl69" style="border-top:none;border-left:none">朱梅可芸</td>
   <td class="xl66" style="border-top:none;border-left:none">　</td>
   <td class="xl66" style="border-top:none;border-left:none">　</td>
- </tr>
- <tr height="19" style="height:13.9pt">
-  <td height="19" style="height:13.9pt"></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
- </tr>
- <tr height="19" style="height:13.9pt">
-  <td height="19" style="height:13.9pt"></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
- </tr>
- <tr height="19" style="height:13.9pt">
-  <td height="19" style="height:13.9pt"></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
- </tr>
- <tr height="19" style="height:13.9pt">
-  <td height="19" style="height:13.9pt"></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
- </tr>
- <tr height="19" style="height:13.9pt">
-  <td height="19" style="height:13.9pt"></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
- </tr>
- <tr height="19" style="height:13.9pt">
-  <td height="19" style="height:13.9pt"></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
- </tr>
- <tr height="19" style="height:13.9pt">
-  <td height="19" style="height:13.9pt"></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
- </tr>
- <tr height="19" style="height:13.9pt">
-  <td height="19" style="height:13.9pt"></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
- </tr>
- <tr height="19" style="height:13.9pt">
-  <td height="19" style="height:13.9pt"></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
- </tr>
- <tr height="19" style="height:13.9pt">
-  <td height="19" style="height:13.9pt"></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
- </tr>
- <tr height="19" style="height:13.9pt">
-  <td height="19" style="height:13.9pt"></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
- </tr>
- <!--[if supportMisalignedColumns]-->
- <tr height="0" style="display:none">
-  <td width="65" style="width:48pt"></td>
-  <td width="65" style="width:48pt"></td>
-  <td width="186" style="width:140pt"></td>
-  <td width="65" style="width:48pt"></td>
-  <td width="65" style="width:48pt"></td>
-  <td width="65" style="width:48pt"></td>
  </tr>
  <!--[endif]-->
 </tbody></table>
