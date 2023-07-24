@@ -335,10 +335,10 @@ var ABOUT = {
 
 推荐使用Github Pages发布你所制作完成的地图。你也可以使用自己的服务器，并以静态页面的形式发布地图。
 
-## 开源协议
-
-GPL协议（协议详情见：[维基百科](https://en.wikipedia.org/wiki/GNU_General_Public_License)）
-
 ## 音乐播放器（这不是教程内容）
 
 来源于此：https://blog.csdn.net/weixin_44081211/article/details/124574902
+
+## 开源协议（这不是教程内容）
+
+遵守与原模版相同的GPL协议。
