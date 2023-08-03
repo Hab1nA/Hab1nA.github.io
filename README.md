@@ -114,8 +114,8 @@
   <td class="xl66" style="border-top:none;border-left:none">　</td>
  </tr>
  <tr height="19" style="height:13.9pt">
-  <td rowspan="3" height="38" class="xl65" style="height:27.8pt;border-top:none">四川</td>
-  <td rowspan="3" class="xl67" style="border-top:none">成都</td>
+  <td rowspan="2" height="38" class="xl65" style="height:27.8pt;border-top:none">四川</td>
+  <td rowspan="2" class="xl67" style="border-top:none">成都</td>
   <td class="xl68" style="border-top:none;border-left:none">四川大学（江安校区）</td>
   <td class="xl69" style="border-top:none;border-left:none">钟思雨</td>
   <td class="xl66" style="border-top:none;border-left:none">　</td>
@@ -125,14 +125,7 @@
   <td height="19" class="xl68" style="height:13.9pt;border-top:none;border-left:
   none">电子科技大学（清水河校区）</span></td>
   <td class="xl69" style="border-top:none;border-left:none">潘思颖</td>
-  <td class="xl69" style="border-top:none;border-left:none">　</td>
-  <td class="xl66" style="border-top:none;border-left:none">　</td>
- </tr>
- <tr height="19" style="height:13.9pt">
-  <td height="19" class="xl68" style="height:13.9pt;border-top:none;border-left:
-  none">电子科技大学（沙河校区）</span></td>
   <td class="xl69" style="border-top:none;border-left:none">林晟周</td>
-  <td class="xl69" style="border-top:none;border-left:none">　</td>
   <td class="xl66" style="border-top:none;border-left:none">　</td>
  </tr>
  <tr height="19" style="height:13.9pt">
