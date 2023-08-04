@@ -105,6 +105,7 @@ var ABOUT = {
 	"意见反馈" : ["QQ:2321403454"],
 	"框架" : ["<a href='https://github.com/yuehaowang/irmap' target='_blank'>irmap</a>", "Bootstrap", "百度地图"],
 	"备注" : ["地图性能比较差，请耐心等待加载","(免费的能用就不错了要啥自行车😅)","少部分同学的大学所在校区尚不明确，后续将会更正", "歌是我随便选的"],
-	"版本" : ["23.7.24 V1.0.1"],
+	"版本": ["23.8.4 V1.1.0"],
+	"更新内容": ["启用了鼠标滚轮缩放；","修正了初始定位与缩放不合适的问题；"],
 	"源代码": ["<a href='https://github.com/Hab1nA/Hab1nA.github.io' target='_blank'>Github</a"]
 };
