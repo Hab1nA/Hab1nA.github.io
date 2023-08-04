@@ -23,12 +23,13 @@ window.onload = function () {
 
 	initStatisticsModal();
 
-	var zoom = 2, point = new BMap.Point(0, 40);
+	var zoom = 5, point = new BMap.Point(104.072749, 30.440276);
 	if (window.innerWidth < 480) {
-		zoom = 4;
-		point = new BMap.Point(110, 37);
+		zoom = 6;
+		point = new BMap.Point(104.072749, 30.440276);
 	}
 	map.centerAndZoom(point, zoom);
+	map.enableScrollWheelZoom(true);
 }
 
 function initMapTitle(argument) {
