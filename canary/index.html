@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天府七中G2020级蹭饭图</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════
+       顶部导航栏
+       ══════════════════════════════════════ -->
+  <header class="header">
+    <div class="header-brand">
+      <span class="brand-icon">🗺️</span>
+      <h1 class="brand-title">天府七中G2020级蹭饭图</h1>
+    </div>
+
+    <div class="header-actions">
+      <!-- 搜索框 -->
+      <div class="search-wrap">
+        <input type="text" id="searchInput" class="search-input" placeholder="搜索城市或大学…" autocomplete="off">
+        <button id="searchBtn" class="search-btn" title="搜索">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 关于按钮 -->
+      <button class="action-btn" id="aboutBtn">关于</button>
+      <!-- 数据统计按钮 -->
+      <button class="action-btn" id="statsBtn">数据统计</button>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════
+       百度地图容器
+       ══════════════════════════════════════ -->
+  <div id="map-container"></div>
+
+  <!-- ══════════════════════════════════════
+       右下角班级筛选面板
+       ══════════════════════════════════════ -->
+  <div class="class-panel" id="classPanel">
+    <div class="panel-header">
+      <span class="panel-icon">📚</span>
+      <span class="panel-title">班级筛选</span>
+    </div>
+    <div class="panel-body">
+      <label class="class-item c1">
+        <input type="checkbox" id="class1">
+        <span class="class-dot"></span>
+        <span class="class-name">1 班</span>
+        <span class="class-count" id="count1">0人</span>
+      </label>
+      <label class="class-item c2">
+        <input type="checkbox" id="class2">
+        <span class="class-dot"></span>
+        <span class="class-name">2 班</span>
+        <span class="class-count" id="count2">0人</span>
+      </label>
+      <label class="class-item c3">
+        <input type="checkbox" id="class3">
+        <span class="class-dot"></span>
+        <span class="class-name">3 班</span>
+        <span class="class-count" id="count3">0人</span>
+      </label>
+      <label class="class-item c4">
+        <input type="checkbox" id="class4">
+        <span class="class-dot"></span>
+        <span class="class-name">4 班</span>
+        <span class="class-count" id="count4">0人</span>
+      </label>
+    </div>
+    <div class="panel-footer">
+      <span id="totalCount">共加载 0 人</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       加载遮罩（地理编码进行时显示）
+       ══════════════════════════════════════ -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <div class="loading-text">正在定位大学位置，请稍候…</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       关于 模态框
+       ══════════════════════════════════════ -->
+  <div class="modal" id="aboutModal" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 class="modal-title" id="aboutTitle">关于本站</h2>
+        <button class="modal-close" data-modal="aboutModal" aria-label="关闭">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="about-section">
+          <h3>🏫 项目简介</h3>
+          <p>天府七中G2020级蹭饭图是一个展示2020届高中毕业生就读大学地理分布的可视化工具。通过百度地图，直观呈现同学们散落在全国各地的求学轨迹。</p>
+        </div>
+        <div class="about-section">
+          <h3>📖 使用说明</h3>
+          <ul>
+            <li>勾选右下角班级复选框，即可在地图上显示该班同学的就读大学标记。</li>
+            <li>点击地图上的彩色标记，可查看该大学就读的同学信息。</li>
+            <li>鼠标悬停标记，可预览大学名称与人数。</li>
+            <li>使用顶部搜索框可快速定位到特定城市或大学。</li>
+            <li>可同时勾选多个班级进行对比查看。</li>
+          </ul>
+        </div>
+        <div class="about-section">
+          <h3>⚙️ 配置说明</h3>
+          <p>本站使用百度地图 JavaScript API v3.0。若地图无法正常加载，请在
+            <code>index.html</code> 末尾将 <code>YOUR_API_KEY</code> 替换为您的百度地图开发密钥（AK）。</p>
+          <p>申请地址：<a href="https://lbsyun.baidu.com" target="_blank" rel="noopener">lbsyun.baidu.com</a></p>
+        </div>
+        <div class="about-section">
+          <h3>🛠️ 数据维护</h3>
+          <p>班级数据分别存储在 <code>data/class1.js</code> ~ <code>data/class4.js</code> 中，每个文件包含
+            <code>{ name, university, city }</code> 格式的同学信息，可直接编辑添加。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       数据统计 模态框
+       ══════════════════════════════════════ -->
+  <div class="modal" id="statsModal" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
+    <div class="modal-card wide">
+      <div class="modal-head">
+        <h2 class="modal-title" id="statsTitle">📊 数据统计</h2>
+        <button class="modal-close" data-modal="statsModal" aria-label="关闭">✕</button>
+      </div>
+      <div class="modal-body" id="statsContent">
+        <!-- 由 JS 动态填充 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       Toast 提示
+       ══════════════════════════════════════ -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ══════════════════════════════════════
+       班级数据文件（各班独立 JS）
+       ══════════════════════════════════════ -->
+  <script src="data/class1.js"></script>
+  <script src="data/class2.js"></script>
+  <script src="data/class3.js"></script>
+  <script src="data/class4.js"></script>
+
+  <!-- 主逻辑（须在地图 API 之前加载，以便定义 onBMapCallback） -->
+  <script src="js/main.js"></script>
+
+  <!--
+    百度地图 JavaScript API v3.0
+    ★ 请将下方 YOUR_API_KEY 替换为您在百度地图开放平台申请的 AK ★
+    申请地址：https://lbsyun.baidu.com/apiconsole/key#/home
+  -->
+  <script src="https://api.map.baidu.com/api?v=3.0&ak=YOUR_API_KEY&callback=onBMapCallback"></script>
+
+</body>
+</html>
