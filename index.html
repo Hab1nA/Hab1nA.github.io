@@ -13,7 +13,7 @@
 	<script type="text/javascript" src="./config.js"></script>
 	<script type="text/javascript">
 		(function () {
-			var baiduMapAk = (window.BAIDU_MAP_AK || "").trim();
+			var baiduMapAk = typeof window.BAIDU_MAP_AK === "string" ? window.BAIDU_MAP_AK.trim() : "";
 			if (!baiduMapAk) {
 				console.error("未检测到百度地图 AK，请在 config.js 中设置 BAIDU_MAP_AK。");
 				return;
@@ -22,8 +22,13 @@
 			sdkScript.type = "text/javascript";
 			sdkScript.src = "https://api.map.baidu.com/api?v=2.0&ak=" + encodeURIComponent(baiduMapAk);
 			sdkScript.onload = function () {
-				if (typeof window.initMapApp === "function") {
+				if (typeof window.initMapApp !== "function") {
+					return;
+				}
+				if (document.readyState === "complete") {
 					window.initMapApp();
+				} else {
+					window.addEventListener("load", window.initMapApp, { once: true });
 				}
 			};
 			sdkScript.onerror = function () {

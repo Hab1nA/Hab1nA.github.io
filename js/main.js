@@ -17,7 +17,7 @@ function initMapApp () {
 	if (appInitialized) {
 		return;
 	}
-	if (document.readyState !== "complete" || !window.BMap) {
+	if (!window.BMap) {
 		return;
 	}
 	appInitialized = true;
