@@ -1,4 +1,6 @@
 /** 更多样式 http://developer.baidu.com/map/custom/list.htm */
+var BAIDU_MAP_AK = "";
+
 var MAP_STYLE = "googlelite";
 
 var DATA = {
