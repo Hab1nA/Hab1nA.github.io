@@ -13,12 +13,11 @@ var AppState = {
 
 var AppInitialized = false;
 
-function initWhenReady () {
+function initMapApp () {
 	if (AppInitialized) {
 		return;
 	}
 	if (document.readyState !== "complete" || !window.BMap) {
-		setTimeout(initWhenReady, 50);
 		return;
 	}
 	AppInitialized = true;
@@ -50,7 +49,8 @@ function initWhenReady () {
 	map.enableScrollWheelZoom(true);
 }
 
-initWhenReady();
+window.initMapApp = initMapApp;
+window.addEventListener("load", initMapApp);
 
 function initMapTitle(argument) {
 	document.title = MAP_TITLE;
