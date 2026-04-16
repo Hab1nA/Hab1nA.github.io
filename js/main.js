@@ -117,8 +117,10 @@ function switchConfig (map, key) {
 	var config = getClassConfig(key);
 	if (!config) {
 		alert("“" + key + "班”配置尚未添加。请先在 config.js 的 CLASS_CONFIGS 中补充。");
-		$("#checkbox1").prop("checked", true);
-		$("#checkbox2,#checkbox3,#checkbox4").prop("checked", false);
+		$(".floating-checkbox-container input[type='checkbox']").each(function () {
+			var itemKey = ($(this).data("config-key") + "");
+			this.checked = (itemKey === AppState.currentConfigKey);
+		});
 		return;
 	}
 
@@ -265,7 +267,7 @@ function createMarker (geo, map, city, university, c_names, u_names) {
 			marker.setAnimation(BMAP_ANIMATION_DROP);
 
 			marker.addEventListener("click", function () {
-				showMarkerInfo(map, marker, point);
+				showMarkerInfo(map, marker, marker.getPosition());
 			});
 
 			Statistics.markers.push(marker);
