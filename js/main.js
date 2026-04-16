@@ -17,7 +17,7 @@ function initMapApp () {
 	if (appInitialized) {
 		return;
 	}
-	if (!window.BMap) {
+	if (!window.BMap || !document.getElementById("container")) {
 		return;
 	}
 	appInitialized = true;
@@ -51,6 +51,7 @@ function initMapApp () {
 
 window.initMapApp = initMapApp;
 window.addEventListener("load", initMapApp);
+window.addEventListener("bmap-ready", initMapApp);
 
 function initMapTitle(argument) {
 	document.title = MAP_TITLE;

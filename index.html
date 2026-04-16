@@ -22,14 +22,7 @@
 			sdkScript.type = "text/javascript";
 			sdkScript.src = "https://api.map.baidu.com/api?v=2.0&ak=" + encodeURIComponent(baiduMapAk);
 			sdkScript.onload = function () {
-				if (typeof window.initMapApp !== "function") {
-					return;
-				}
-				if (document.readyState === "complete") {
-					window.initMapApp();
-				} else {
-					window.addEventListener("load", window.initMapApp, { once: true });
-				}
+				window.dispatchEvent(new Event("bmap-ready"));
 			};
 			sdkScript.onerror = function () {
 				console.error("百度地图 SDK 加载失败，请检查 AK 与网络环境。");
