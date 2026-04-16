@@ -11,7 +11,17 @@ var AppState = {
 	currentConfigKey : "1"
 };
 
-window.onload = function () {
+var appInitialized = false;
+
+function initMapApp () {
+	if (appInitialized) {
+		return;
+	}
+	if (!window.BMap || !document.getElementById("container")) {
+		return;
+	}
+	appInitialized = true;
+
 	applyConfig(AppState.currentConfigKey);
 	initMapTitle();
 	initAboutModal();
@@ -38,6 +48,10 @@ window.onload = function () {
 	map.centerAndZoom(point, zoom);
 	map.enableScrollWheelZoom(true);
 }
+
+window.initMapApp = initMapApp;
+window.addEventListener("load", initMapApp);
+window.addEventListener("bmap-ready", initMapApp);
 
 function initMapTitle(argument) {
 	document.title = MAP_TITLE;

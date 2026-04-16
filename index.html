@@ -7,13 +7,30 @@
 
 	<link href="css/bootstrap.min.css" rel="stylesheet">
 
-	<script type="text/javascript" src="https://api.map.baidu.com/api?v=2.0&ak=Dp1ulGnZZaG5jBIamrwB0vg2X6xytLcb"></script>
-
 	<script src="./js/jquery.min.js"></script>
 	<script src="./js/bootstrap.min.js"></script>
 
-	<script type="text/javascript" src="./js/main.js"></script>
 	<script type="text/javascript" src="./config.js"></script>
+	<script type="text/javascript">
+		(function () {
+			var baiduMapAk = typeof window.BAIDU_MAP_AK === "string" ? window.BAIDU_MAP_AK.trim() : "";
+			if (!baiduMapAk) {
+				console.error("未检测到百度地图 AK，请在 config.js 中设置 BAIDU_MAP_AK。");
+				return;
+			}
+			var sdkScript = document.createElement("script");
+			sdkScript.type = "text/javascript";
+			sdkScript.src = "https://api.map.baidu.com/api?v=2.0&ak=" + encodeURIComponent(baiduMapAk);
+			sdkScript.onload = function () {
+				window.dispatchEvent(new Event("bmap-ready"));
+			};
+			sdkScript.onerror = function () {
+				console.error("百度地图 SDK 加载失败，请检查 AK 与网络环境。");
+			};
+			document.head.appendChild(sdkScript);
+		})();
+	</script>
+	<script type="text/javascript" src="./js/main.js"></script>
 
 	<style type="text/css">
 		body, html {
