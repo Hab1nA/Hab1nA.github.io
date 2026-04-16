@@ -116,7 +116,7 @@ function initConfigSwitch (map) {
 function switchConfig (map, key) {
 	var config = getClassConfig(key);
 	if (!config) {
-		alert("“" + key + "班”配置尚未添加。请先在 config.js 的 CLASS_CONFIGS 中补充。");
+		alert("\"" + key + "班\"配置尚未添加。请先在 config.js 的 CLASS_CONFIGS 中补充。");
 		$(".floating-checkbox-container input[type='checkbox']").each(function () {
 			var itemKey = ($(this).data("config-key") + "");
 			this.checked = (itemKey === AppState.currentConfigKey);
