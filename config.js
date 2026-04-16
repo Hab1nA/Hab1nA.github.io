@@ -1,5 +1,5 @@
 /** 更多样式 http://developer.baidu.com/map/custom/list.htm */
-window.BAIDU_MAP_AK = ""; // 请在此填写你的百度地图 AK
+window.BAIDU_MAP_AK = "Dp1ulGnZZaG5jBIamrwB0vg2X6xytLcb"; // 请在此填写你的百度地图 AK
 
 var MAP_STYLE = "googlelite";
 
