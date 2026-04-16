@@ -11,16 +11,16 @@ var AppState = {
 	currentConfigKey : "1"
 };
 
-var AppInitialized = false;
+var appInitialized = false;
 
 function initMapApp () {
-	if (AppInitialized) {
+	if (appInitialized) {
 		return;
 	}
 	if (document.readyState !== "complete" || !window.BMap) {
 		return;
 	}
-	AppInitialized = true;
+	appInitialized = true;
 
 	applyConfig(AppState.currentConfigKey);
 	initMapTitle();

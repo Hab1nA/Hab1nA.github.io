@@ -288,7 +288,7 @@ IRMap (Ideal Reality Map) 是一个用来做高中毕业去向的工具。基于
 用文本编辑器打开config.js，将密钥填写在 `BAIDU_MAP_AK` 变量中并保存文件：
 
 ```javascript
-var BAIDU_MAP_AK = "亲，密钥填这里";
+window.BAIDU_MAP_AK = "亲，密钥填这里";
 ```
 
 页面会自动从 `config.js` 读取该值并使用 HTTPS 加载百度地图 SDK。

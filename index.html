@@ -13,12 +13,9 @@
 	<script type="text/javascript" src="./config.js"></script>
 	<script type="text/javascript">
 		(function () {
-			var baiduMapAk = (
-				window.BAIDU_MAP_AK ||
-				(typeof BAIDU_MAP_AK === "string" ? BAIDU_MAP_AK : "")
-			).trim();
+			var baiduMapAk = (window.BAIDU_MAP_AK || "").trim();
 			if (!baiduMapAk) {
-				alert("未检测到百度地图 AK，请在 config.js 中设置 BAIDU_MAP_AK。");
+				console.error("未检测到百度地图 AK，请在 config.js 中设置 BAIDU_MAP_AK。");
 				return;
 			}
 			var sdkScript = document.createElement("script");
@@ -30,7 +27,7 @@
 				}
 			};
 			sdkScript.onerror = function () {
-				alert("百度地图 SDK 加载失败，请检查 AK 与网络环境。");
+				console.error("百度地图 SDK 加载失败，请检查 AK 与网络环境。");
 			};
 			document.head.appendChild(sdkScript);
 		})();
