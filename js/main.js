@@ -6,13 +6,18 @@ var Statistics = {
 };
 
 var ZOOM_LEVEL = 10;
+var AppState = {
+	map : null,
+	currentConfigKey : "1"
+};
 
 window.onload = function () {
+	applyConfig(AppState.currentConfigKey);
 	initMapTitle();
-
 	initAboutModal();
 
 	var map = new BMap.Map("container");
+	AppState.map = map;
 	map.setMapStyle({style : MAP_STYLE});
 	map.addEventListener("zoomend", function () {
 		hideOverlayMarkers(map);
@@ -22,6 +27,8 @@ window.onload = function () {
 	addMarks(map);
 
 	initStatisticsModal();
+	initSearch(map);
+	initConfigSwitch(map);
 
 	var zoom = 5, point = new BMap.Point(104.072749, 30.440276);
 	if (window.innerWidth < 480) {
@@ -39,6 +46,114 @@ function initMapTitle(argument) {
 	$("#container").height($(window).height() - navbar.height());
 
 	$("#map_title").text(MAP_TITLE);
+}
+
+function resetStatistics () {
+	Statistics.u_amount = 0;
+	Statistics.c_amount = 0;
+	Statistics.p_amount = 0;
+	Statistics.markers = [];
+}
+
+function clearMarkers (map) {
+	for (var i = 0, l = Statistics.markers.length; i < l; i++) {
+		map.removeOverlay(Statistics.markers[i]);
+	}
+	Statistics.markers = [];
+}
+
+function initSearch (map) {
+	$("#navbar-right").on("submit", function (event) {
+		event.preventDefault();
+		searchAndLocate(map, $("#txtSearch").val());
+	});
+}
+
+function searchAndLocate (map, keyword) {
+	var query = $.trim(keyword || "");
+	if (!query) {
+		return;
+	}
+
+	var lowerQuery = query.toLowerCase();
+	var list = Statistics.markers;
+	var target = null;
+
+	for (var i = 0, l = list.length; i < l; i++) {
+		var marker = list[i];
+		var haystack = (marker.m_city + " " + marker.m_university + " " + marker.m_names).toLowerCase();
+		if (haystack.indexOf(lowerQuery) >= 0) {
+			target = marker;
+			break;
+		}
+	}
+
+	if (!target) {
+		alert("未找到匹配项：" + query);
+		return;
+	}
+
+	var point = target.getPosition();
+	map.centerAndZoom(point, Math.max(ZOOM_LEVEL, map.getZoom()));
+	showMarkerInfo(map, target, point);
+}
+
+function initConfigSwitch (map) {
+	var selector = ".floating-checkbox-container input[type='checkbox']";
+	$(selector).on("change", function () {
+		var key = $(this).data("config-key") + "";
+
+		if (!this.checked) {
+			this.checked = true;
+			return;
+		}
+
+		$(selector).not(this).prop("checked", false);
+		switchConfig(map, key);
+	});
+}
+
+function switchConfig (map, key) {
+	var config = getClassConfig(key);
+	if (!config) {
+		alert("\"" + key + "班\"配置尚未添加。请先在 config.js 的 CLASS_CONFIGS 中补充。");
+		$(".floating-checkbox-container input[type='checkbox']").each(function () {
+			var itemKey = ($(this).data("config-key") + "");
+			this.checked = (itemKey === AppState.currentConfigKey);
+		});
+		return;
+	}
+
+	AppState.currentConfigKey = key;
+	applyConfig(key);
+	map.setMapStyle({style : MAP_STYLE});
+	clearMarkers(map);
+	addMarks(map);
+	initMapTitle();
+	initAboutModal();
+	initStatisticsModal();
+}
+
+function getClassConfig (key) {
+	if (!window.CLASS_CONFIGS) {
+		return null;
+	}
+	return window.CLASS_CONFIGS[key] || null;
+}
+
+function applyConfig (key) {
+	var config = getClassConfig(key);
+	if (!config) {
+		return false;
+	}
+
+	MAP_STYLE = config.MAP_STYLE || MAP_STYLE;
+	DATA = config.DATA || {};
+	SPEC_POS = config.SPEC_POS || {};
+	MAP_TITLE = config.MAP_TITLE || MAP_TITLE;
+	ABOUT = config.ABOUT || {};
+
+	return true;
 }
 
 function initAboutModal () {
@@ -86,6 +201,7 @@ function addControls(map) {
 }
 
 function addMarks (map) {
+	resetStatistics();
 	var myGeo = new BMap.Geocoder();
 
 	for (var city in DATA) {
@@ -143,20 +259,15 @@ function createMarker (geo, map, city, university, c_names, u_names) {
 				})
 			});
 			marker.m_city = city;
+			marker.m_university = university;
+			marker.m_names = u_names;
+			marker.m_cityInfo = c_names;
+			marker.m_universityInfo = u_names;
 			map.addOverlay(marker);
 			marker.setAnimation(BMAP_ANIMATION_DROP);
 
 			marker.addEventListener("click", function () {
-				var zoom = map.getZoom();
-
-				var opts = {
-					width : 200,
-					title : zoom < ZOOM_LEVEL ? city : university,
-					enableMessage : false
-				};
-
-				var infoWindow = new BMap.InfoWindow(zoom < ZOOM_LEVEL ? c_names : u_names, opts);
-				map.openInfoWindow(infoWindow, point);
+				showMarkerInfo(map, marker, marker.getPosition());
 			});
 
 			Statistics.markers.push(marker);
@@ -172,6 +283,18 @@ function createMarker (geo, map, city, university, c_names, u_names) {
 	} else {
 		geo.getPoint(university, create, city);
 	}
+}
+
+function showMarkerInfo (map, marker, point) {
+	var zoom = map.getZoom();
+	var opts = {
+		width : 200,
+		title : zoom < ZOOM_LEVEL ? marker.m_city : marker.m_university,
+		enableMessage : false
+	};
+
+	var infoWindow = new BMap.InfoWindow(zoom < ZOOM_LEVEL ? marker.m_cityInfo : marker.m_universityInfo, opts);
+	map.openInfoWindow(infoWindow, point);
 }
 
 function hideOverlayMarkers (map) {

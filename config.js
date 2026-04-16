@@ -109,3 +109,13 @@ var ABOUT = {
 	"更新内容": ["启用了鼠标滚轮缩放；","修正了初始定位与缩放不合适的问题；"],
 	"源代码": ["<a href='https://github.com/Hab1nA/Hab1nA.github.io' target='_blank'>Github</a"]
 };
+
+var CLASS_CONFIGS = window.CLASS_CONFIGS || {};
+CLASS_CONFIGS["1"] = {
+	"MAP_STYLE": MAP_STYLE,
+	"DATA": DATA,
+	"SPEC_POS": SPEC_POS,
+	"MAP_TITLE": MAP_TITLE,
+	"ABOUT": ABOUT
+};
+window.CLASS_CONFIGS = CLASS_CONFIGS;

@@ -24,7 +24,7 @@
 			margin-bottom: 0px;
 		}
 
-		#navbar_right {
+		#navbar-right {
 			margin-right: 20px;
 		}
 
@@ -75,14 +75,6 @@
 
 
 
-	<script>
-		function showMessage() {
-			alert("🤣👉没用的，我做不来搜索👈🤣");
-		}
-	</script>
-
-
-
 	<nav class="navbar navbar-default" id="navbar">
 		<div class="container-fluid">
 			<div class="navbar-header">
@@ -98,8 +90,8 @@
 
 			<div class="collapse navbar-collapse" id="navbar_collapse">
 				<form class="navbar-form navbar-right" id="navbar-right">
-					<input type="search" name="txtSearch" id="txtSearch">
-					<button onclick="showMessage()">搜索</button>
+					<input type="search" name="txtSearch" id="txtSearch" placeholder="搜索城市 / 大学 / 姓名">
+					<button type="submit">搜索</button>
 					<button type="button" class="btn btn-danger" data-toggle="modal" data-target="#about_modal"><span class="glyphicon glyphicon-info-sign"></span> 关于</button>
 					<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#statistics_modal"><span class="glyphicon glyphicon-inbox"></span> 数据统计</button>
 				</form>
@@ -147,22 +139,22 @@
 	<div class="floating-checkbox-container">
 		<!-- 勾选框 1 -->
 		<label>
-			<input type="checkbox" id="checkbox1"> 1班
+			<input type="checkbox" id="checkbox1" data-config-key="1" checked> 1班
 		</label>
 		<br>
 		<!-- 勾选框 2 -->
 		<label>
-			<input type="checkbox" id="checkbox2"> 2班
+			<input type="checkbox" id="checkbox2" data-config-key="2"> 2班
 		</label>
 		<br>
 		<!-- 勾选框 3 -->
 		<label>
-			<input type="checkbox" id="checkbox3"> 3班
+			<input type="checkbox" id="checkbox3" data-config-key="3"> 3班
 		</label>
 		<br>
 		<!-- 勾选框 4 -->
 		<label>
-			<input type="checkbox" id="checkbox4"> 4班
+			<input type="checkbox" id="checkbox4" data-config-key="4"> 4班
 		</label>
 	</div>
 
