@@ -11,7 +11,18 @@ var AppState = {
 	currentConfigKey : "1"
 };
 
-window.onload = function () {
+var AppInitialized = false;
+
+function initWhenReady () {
+	if (AppInitialized) {
+		return;
+	}
+	if (document.readyState !== "complete" || !window.BMap) {
+		setTimeout(initWhenReady, 50);
+		return;
+	}
+	AppInitialized = true;
+
 	applyConfig(AppState.currentConfigKey);
 	initMapTitle();
 	initAboutModal();
@@ -38,6 +49,8 @@ window.onload = function () {
 	map.centerAndZoom(point, zoom);
 	map.enableScrollWheelZoom(true);
 }
+
+initWhenReady();
 
 function initMapTitle(argument) {
 	document.title = MAP_TITLE;

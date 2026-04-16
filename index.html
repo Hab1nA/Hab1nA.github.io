@@ -13,13 +13,18 @@
 	<script type="text/javascript" src="./config.js"></script>
 	<script type="text/javascript">
 		(function () {
-			var ak = (window.BAIDU_MAP_AK || "").trim();
-			if (!ak) {
+			var baiduMapAk = (window.BAIDU_MAP_AK || "").trim();
+			if (!baiduMapAk) {
 				alert("未检测到百度地图 AK，请在 config.js 中设置 BAIDU_MAP_AK。");
 				return;
 			}
-			var sdk = "https://api.map.baidu.com/api?v=2.0&ak=" + encodeURIComponent(ak);
-			document.write('<script type="text/javascript" src="' + sdk + '"><\/script>');
+			var sdkScript = document.createElement("script");
+			sdkScript.type = "text/javascript";
+			sdkScript.src = "https://api.map.baidu.com/api?v=2.0&ak=" + encodeURIComponent(baiduMapAk);
+			sdkScript.onerror = function () {
+				alert("百度地图 SDK 加载失败，请检查 AK 与网络环境。");
+			};
+			document.head.appendChild(sdkScript);
 		})();
 	</script>
 	<script type="text/javascript" src="./js/main.js"></script>
