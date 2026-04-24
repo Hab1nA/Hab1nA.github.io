@@ -38,7 +38,7 @@
   </header>
 
   <!-- ══════════════════════════════════════
-       百度地图容器
+       地图容器
        ══════════════════════════════════════ -->
   <div id="map-container"></div>
 
@@ -103,7 +103,7 @@
       <div class="modal-body">
         <div class="about-section">
           <h3>🏫 项目简介</h3>
-          <p>天府七中G2020级蹭饭图是一个展示2020届高中毕业生就读大学地理分布的可视化工具。通过百度地图，直观呈现同学们散落在全国各地的求学轨迹。</p>
+          <p>天府七中G2020级蹭饭图是一个展示2020届高中毕业生就读大学地理分布的可视化工具。通过天地图，直观呈现同学们散落在全国各地的求学轨迹。</p>
         </div>
         <div class="about-section">
           <h3>📖 使用说明</h3>
@@ -117,9 +117,9 @@
         </div>
         <div class="about-section">
           <h3>⚙️ 配置说明</h3>
-          <p>本站使用百度地图 JavaScript API v3.0。若地图无法正常加载，请在
-            <code>index.html</code> 末尾将 <code>YOUR_API_KEY</code> 替换为您的百度地图开发密钥（AK）。</p>
-          <p>申请地址：<a href="https://lbsyun.baidu.com" target="_blank" rel="noopener">lbsyun.baidu.com</a></p>
+          <p>本站使用天地图 JavaScript API v4.0。若地图无法正常加载，请在
+            <code>index.html</code> 末尾将 <code>YOUR_API_KEY</code> 替换为您的天地图开发密钥（TK）。</p>
+          <p>申请地址：<a href="https://lbs.tianditu.gov.cn/" target="_blank" rel="noopener">lbs.tianditu.gov.cn</a></p>
         </div>
         <div class="about-section">
           <h3>🛠️ 数据维护</h3>
@@ -158,15 +158,32 @@
   <script src="data/class3.js"></script>
   <script src="data/class4.js"></script>
 
-  <!-- 主逻辑（须在地图 API 之前加载，以便定义 onBMapCallback） -->
+  <!-- 主逻辑（须在地图 API 之前加载，以便定义 onTMapCallback） -->
   <script src="js/main.js"></script>
 
   <!--
-    百度地图 JavaScript API v3.0
-    ★ 请将下方 YOUR_API_KEY 替换为您在百度地图开放平台申请的 AK ★
-    申请地址：https://lbsyun.baidu.com/apiconsole/key#/home
+    天地图 JavaScript API v4.0
+    ★ 必须将下方 YOUR_API_KEY 替换为您在天地图开放平台申请的 TK，否则地图不会加载 ★
+    申请地址：https://lbs.tianditu.gov.cn/
   -->
-  <script src="https://api.map.baidu.com/api?v=3.0&ak=Dp1ulGnZZaG5jBIamrwB0vg2X6xytLcb&callback=onBMapCallback"></script>
+  <script src="https://api.tianditu.gov.cn/api?v=4.0&tk=YOUR_API_KEY"></script>
+  <script>
+    (function bootstrapTMap(maxRetry) {
+      if (typeof window.onTMapCallback !== 'function') return;
+      var usingPlaceholderKey = !!document.querySelector('script[src*="tk=YOUR_API_KEY"]');
+      if (usingPlaceholderKey) {
+        console.error('请先在 index.html 中将 YOUR_API_KEY 替换为有效的天地图 TK。');
+        return;
+      }
+      if (typeof window.T !== 'undefined') {
+        window.onTMapCallback();
+        return;
+      }
+      if (maxRetry > 0) {
+        setTimeout(function () { bootstrapTMap(maxRetry - 1); }, 100);
+      }
+    })(30);
+  </script>
 
 </body>
 </html>
