@@ -168,9 +168,16 @@
   -->
   <script src="https://api.tianditu.gov.cn/api?v=4.0&tk=YOUR_API_KEY"></script>
   <script>
-    if (typeof window.onTMapCallback === 'function' && typeof window.T !== 'undefined') {
-      window.onTMapCallback();
-    }
+    (function bootstrapTMap(maxRetry) {
+      if (typeof window.onTMapCallback !== 'function') return;
+      if (typeof window.T !== 'undefined') {
+        window.onTMapCallback();
+        return;
+      }
+      if (maxRetry > 0) {
+        setTimeout(function () { bootstrapTMap(maxRetry - 1); }, 100);
+      }
+    })(30);
   </script>
 
 </body>

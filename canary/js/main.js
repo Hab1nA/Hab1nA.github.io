@@ -82,16 +82,9 @@ function processNextGeocode() {
     return;
   }
 
-  const keyword = (item.city ? item.city : '') + item.university;
+  const keyword = (item.city || '') + item.university;
   geocoder.getPoint(keyword, function (result) {
-    let point = null;
-    if (result) {
-      if (typeof result.getStatus === 'function' && result.getStatus() === TMAP_GEOCODE_SUCCESS && typeof result.getLocationPoint === 'function') {
-        point = result.getLocationPoint();
-      } else if (typeof result.lng === 'number' && typeof result.lat === 'number') {
-        point = new T.LngLat(result.lng, result.lat);
-      }
-    }
+    const point = parseGeocodeResult(result);
     geoCache[item.university] = point; // null 时表示未找到，也缓存，避免重复请求
     item.callback(point);
     setTimeout(processNextGeocode, 250);
@@ -312,8 +305,8 @@ function performSearch() {
     onSearchComplete: function (result) {
       if (result && parseInt(result.getResultType(), 10) === TMAP_SEARCH_RESULT_POI) {
         const pois = result.getPois();
-        if (pois && pois.length > 0 && pois[0].lonlat) {
-          const lnglatArr = String(pois[0].lonlat).split(',');
+        if (pois && pois.length > 0 && typeof pois[0].lonlat === 'string') {
+          const lnglatArr = pois[0].lonlat.split(',');
           if (lnglatArr.length === 2) {
             const lng = parseFloat(lnglatArr[0]);
             const lat = parseFloat(lnglatArr[1]);
@@ -421,6 +414,17 @@ function updateTotalCount() {
 function updateLoadingOverlay() {
   const el = document.getElementById('loadingOverlay');
   el.style.display = pendingGeocodesCount > 0 ? 'flex' : 'none';
+}
+
+function parseGeocodeResult(result) {
+  if (!result) return null;
+  if (typeof result.getStatus === 'function' && result.getStatus() === TMAP_GEOCODE_SUCCESS && typeof result.getLocationPoint === 'function') {
+    return result.getLocationPoint();
+  }
+  if (typeof result.lng === 'number' && typeof result.lat === 'number') {
+    return new T.LngLat(result.lng, result.lat);
+  }
+  return null;
 }
 
 function addMapOverlay(overlay) {
