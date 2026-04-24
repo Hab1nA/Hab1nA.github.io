@@ -303,6 +303,7 @@ function performSearch() {
   const localSearch = new T.LocalSearch(map, {
     pageCapacity: 10,
     onSearchComplete: function (result) {
+      // getResultType 在不同示例中返回值类型不完全一致，这里统一转数字比较
       if (result && Number(result.getResultType()) === TMAP_SEARCH_RESULT_POI) {
         const pois = result.getPois();
         if (pois && pois.length > 0 && typeof pois[0].lonlat === 'string') {
@@ -418,7 +419,10 @@ function updateLoadingOverlay() {
 
 function parseGeocodeResult(result) {
   if (!result) return null;
-  if (typeof result.getStatus === 'function' && result.getStatus() === TMAP_GEOCODE_SUCCESS && typeof result.getLocationPoint === 'function') {
+  const hasStatusMethod = typeof result.getStatus === 'function';
+  const geocodeSuccess = hasStatusMethod && result.getStatus() === TMAP_GEOCODE_SUCCESS;
+  const hasLocationPointMethod = typeof result.getLocationPoint === 'function';
+  if (geocodeSuccess && hasLocationPointMethod) {
     return result.getLocationPoint();
   }
   if (typeof result.lng === 'number' && typeof result.lat === 'number') {
