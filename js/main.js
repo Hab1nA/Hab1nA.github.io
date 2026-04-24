@@ -122,7 +122,7 @@ function searchAndLocate (map, keyword) {
 }
 
 /**
- * 统一搜索关键字格式：去首尾空格、转小写、移除所有空白字符。
+ * 统一搜索关键字格式：去首尾空格、转小写，并移除所有空白字符（含中间空格）。
  */
 function normalizeSearchKeyword (text) {
 	return $.trim(String(text == null ? "" : text)).toLowerCase().replace(/\s+/g, "");
@@ -178,7 +178,8 @@ function locateDataMatch (map, dataMatch) {
 	var geo = new BMap.Geocoder();
 	geo.getPoint(dataMatch.university, function (point) {
 		if (!point) {
-			alert("找到同学“" + dataMatch.name + "”，但暂时无法定位其大学。");
+			var safeName = String(dataMatch.name == null ? "" : dataMatch.name).replace(/[\r\n]/g, " ");
+			alert("找到同学“" + safeName + "”，但暂时无法定位其大学。");
 			return;
 		}
 
