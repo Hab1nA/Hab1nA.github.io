@@ -249,12 +249,14 @@ function addMarkerToMap(classNum, point, group) {
 
   const marker = new T.Marker(point, { icon: icon });
 
-  // 悬停提示（大学名 + 人数）
+  // 悬停提示（大学名 + 人数 + 同学姓名）
   const labelText = group.university + '（' + group.students.length + '人）';
+  const studentsText = group.students.join('、');
   const hoverInfoWindow = new T.InfoWindow(
-    '<div style="padding:4px 8px;background:rgba(15,23,42,0.88);color:#f1f5f9;border-radius:6px;font-size:12px;white-space:nowrap;">'
-      + labelText +
-    '</div>',
+    '<div style="padding:6px 8px;background:rgba(15,23,42,0.88);color:#f1f5f9;border-radius:6px;max-width:280px;">'
+      + '<div style="font-size:12px;white-space:nowrap;">' + labelText + '</div>'
+      + '<div style="margin-top:4px;font-size:12px;line-height:1.45;word-break:break-all;">同学：' + studentsText + '</div>'
+      + '</div>',
     { autoPan: false }
   );
 
@@ -268,6 +270,9 @@ function addMarkerToMap(classNum, point, group) {
   // 点击弹出信息窗口
   const infoContent = buildInfoWindowHTML(classNum, group, color);
   const infoWindow = new T.InfoWindow(infoContent, { autoPan: true });
+  marker.__classNum = classNum;
+  marker.__university = group.university;
+  marker.__infoWindow = infoWindow;
   marker.addEventListener('click', function () {
     marker.openInfoWindow(infoWindow);
   });
@@ -300,6 +305,13 @@ function performSearch() {
   const query = document.getElementById('searchInput').value.trim();
   if (!query) return;
 
+  // 优先支持同学姓名检索
+  const studentMatches = findStudentMatchesByName(query);
+  if (studentMatches.length > 0) {
+    focusOnStudentMatch(query, studentMatches);
+    return;
+  }
+
   const localSearch = new T.LocalSearch(map, {
     pageCapacity: 10,
     onSearchComplete: function (result) {
@@ -322,6 +334,49 @@ function performSearch() {
     }
   });
   localSearch.search(query);
+}
+
+function findStudentMatchesByName(query) {
+  const q = query.toLowerCase();
+  const matches = [];
+  for (let i = 1; i <= 4; i++) {
+    (ALL_CLASS_DATA[i] || []).forEach(function (student) {
+      if ((student.name || '').toLowerCase().indexOf(q) !== -1) {
+        matches.push({
+          classNum: i,
+          name: student.name,
+          university: student.university,
+          city: student.city
+        });
+      }
+    });
+  }
+  return matches;
+}
+
+function focusOnStudentMatch(query, matches) {
+  const exact = matches.find(function (m) { return m.name === query; });
+  const target = exact || matches[0];
+  enqueueGeocode(target.university, target.city, function (point) {
+    if (!point) {
+      showToast('找到同学"' + target.name + '"，但未能定位其大学');
+      return;
+    }
+    map.centerAndZoom(point, 13);
+    openMatchedMarkerInfoWindow(target);
+    const extra = matches.length > 1 ? '，其余匹配：' + (matches.length - 1) + ' 人' : '';
+    showToast('已定位：' + target.name + '（' + target.classNum + '班 · ' + target.university + '）' + extra);
+  });
+}
+
+function openMatchedMarkerInfoWindow(target) {
+  const markers = classMarkers[target.classNum] || [];
+  const marker = markers.find(function (m) {
+    return m.__university === target.university;
+  });
+  if (marker && marker.__infoWindow && typeof marker.openInfoWindow === 'function') {
+    marker.openInfoWindow(marker.__infoWindow);
+  }
 }
 
 /* ─── 模态框 ─────────────────────────────────────────────── */
