@@ -433,8 +433,8 @@ function focusOnStudentMatch(query, matches) {
   if (target.coordinate) {
     map.centerAndZoom(toLngLat(target.coordinate), 13);
     openMatchedMarkerInfoWindow(target);
-    const extraByCoordinate = matches.length > 1 ? '，其余匹配：' + (matches.length - 1) + ' 人' : '';
-    showToast('已定位：' + target.name + '（' + target.classNum + '班 · ' + target.university + '）' + extraByCoordinate);
+    const extraMatches = matches.length > 1 ? '，其余匹配：' + (matches.length - 1) + ' 人' : '';
+    showToast('已定位：' + target.name + '（' + target.classNum + '班 · ' + target.university + '）' + extraMatches);
     return;
   }
   enqueueGeocode(target.university, target.city, function (point) {
