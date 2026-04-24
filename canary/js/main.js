@@ -37,6 +37,8 @@ let toastTimer = null;
 
 /** 院校名称在 Top 列表中的最大显示字符数 */
 const UNI_LABEL_MAX_LEN = 9;
+const TMAP_GEOCODE_SUCCESS = 0;
+const TMAP_SEARCH_RESULT_POI = 1;
 
 /** 将一个大学名称加入编码队列，结果通过 callback(T.LngLat|null) 返回 */
 function enqueueGeocode(university, city, callback) {
@@ -84,7 +86,7 @@ function processNextGeocode() {
   geocoder.getPoint(keyword, function (result) {
     let point = null;
     if (result) {
-      if (typeof result.getStatus === 'function' && result.getStatus() === 0 && typeof result.getLocationPoint === 'function') {
+      if (typeof result.getStatus === 'function' && result.getStatus() === TMAP_GEOCODE_SUCCESS && typeof result.getLocationPoint === 'function') {
         point = result.getLocationPoint();
       } else if (typeof result.lng === 'number' && typeof result.lat === 'number') {
         point = new T.LngLat(result.lng, result.lat);
@@ -223,7 +225,7 @@ function loadClassMarkers(classNum) {
 /** 移除某班级的全部地图标记 */
 function removeClassMarkers(classNum) {
   classMarkers[classNum].forEach(function (marker) {
-    map.removeOverLay(marker);
+    removeMapOverlay(marker);
   });
   classMarkers[classNum] = [];
 }
@@ -277,7 +279,7 @@ function addMarkerToMap(classNum, point, group) {
     marker.openInfoWindow(infoWindow);
   });
 
-  map.addOverLay(marker);
+  addMapOverlay(marker);
   classMarkers[classNum].push(marker);
 }
 
@@ -308,13 +310,17 @@ function performSearch() {
   const localSearch = new T.LocalSearch(map, {
     pageCapacity: 10,
     onSearchComplete: function (result) {
-      if (result && parseInt(result.getResultType(), 10) === 1) {
+      if (result && parseInt(result.getResultType(), 10) === TMAP_SEARCH_RESULT_POI) {
         const pois = result.getPois();
         if (pois && pois.length > 0 && pois[0].lonlat) {
           const lnglatArr = String(pois[0].lonlat).split(',');
           if (lnglatArr.length === 2) {
-            map.centerAndZoom(new T.LngLat(parseFloat(lnglatArr[0]), parseFloat(lnglatArr[1])), 14);
-            return;
+            const lng = parseFloat(lnglatArr[0]);
+            const lat = parseFloat(lnglatArr[1]);
+            if (Number.isFinite(lng) && Number.isFinite(lat)) {
+              map.centerAndZoom(new T.LngLat(lng, lat), 14);
+              return;
+            }
           }
         }
       }
@@ -415,6 +421,22 @@ function updateTotalCount() {
 function updateLoadingOverlay() {
   const el = document.getElementById('loadingOverlay');
   el.style.display = pendingGeocodesCount > 0 ? 'flex' : 'none';
+}
+
+function addMapOverlay(overlay) {
+  if (typeof map.addOverLay === 'function') {
+    map.addOverLay(overlay);
+  } else if (typeof map.addOverlay === 'function') {
+    map.addOverlay(overlay);
+  }
+}
+
+function removeMapOverlay(overlay) {
+  if (typeof map.removeOverLay === 'function') {
+    map.removeOverLay(overlay);
+  } else if (typeof map.removeOverlay === 'function') {
+    map.removeOverlay(overlay);
+  }
 }
 
 /** 底部短暂提示条 */
