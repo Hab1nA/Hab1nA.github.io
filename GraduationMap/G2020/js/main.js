@@ -259,7 +259,6 @@ function renderSelectedMarkers() {
 
   const groups = groupSelectedByUniversity(selectedClasses);
   groups.forEach(function (group) {
-    if (renderVersion !== markerRenderVersion) return;
     if (!group.coordinateConflict && group.coordinate) {
       addMarkerToMap(toLngLat(group.coordinate), group);
       return;
