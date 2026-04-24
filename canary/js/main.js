@@ -173,12 +173,10 @@ window.onTMapCallback = function () {
 function setupMapEventListeners() {
   // 班级复选框 → 显示/隐藏标记
   for (let i = 1; i <= 4; i++) {
-    (function () {
-      document.getElementById('class' + i).addEventListener('change', function () {
-        renderSelectedMarkers();
-        updateTotalCount();
-      });
-    })();
+    document.getElementById('class' + i).addEventListener('change', function () {
+      renderSelectedMarkers();
+      updateTotalCount();
+    });
   }
 
   // 搜索框（需要 T.LocalSearch，依赖地图对象）
@@ -286,11 +284,13 @@ function addMarkerToMap(point, group) {
 
   // 悬停提示（大学名 + 人数 + 同学姓名）
   const labelText = group.university + '（' + group.totalStudents + '人）';
-  const studentsText = group.classNums.map(function (classNum) {
-    return (group.studentsByClass[classNum] || []).map(function (name) {
-      return classNum + '班·' + name;
-    }).join('、');
-  }).filter(function (text) { return text; }).join('、');
+  const studentsTextParts = [];
+  group.classNums.forEach(function (classNum) {
+    (group.studentsByClass[classNum] || []).forEach(function (name) {
+      studentsTextParts.push(classNum + '班·' + name);
+    });
+  });
+  const studentsText = studentsTextParts.join('、');
   const safeLabelText = escapeHTML(labelText);
   const safeStudentsText = escapeHTML(studentsText);
   const hoverInfoWindow = new T.InfoWindow(
