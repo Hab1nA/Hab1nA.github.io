@@ -170,7 +170,7 @@
   <script>
     (function bootstrapTMap(maxRetry) {
       if (typeof window.onTMapCallback !== 'function') return;
-      var usingPlaceholderKey = !!document.querySelector('script[src*="tk=7403bbf65cbf354d6a9e3574134f9789"]');
+      var usingPlaceholderKey = !!document.querySelector('script[src*="tk=YOUR_API_KEY"]');
       if (usingPlaceholderKey) {
         console.error('请先在 index.html 中将 YOUR_API_KEY 替换为有效的天地图 TK。');
         return;
