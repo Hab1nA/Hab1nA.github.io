@@ -121,15 +121,26 @@ function searchAndLocate (map, keyword) {
 	showMarkerInfo(map, target, point);
 }
 
+/**
+ * 统一搜索关键字格式：去首尾空格、转小写、移除所有空白字符。
+ */
 function normalizeSearchKeyword (text) {
 	return $.trim(String(text == null ? "" : text)).toLowerCase().replace(/\s+/g, "");
 }
 
 function findDataMatch (normalizedQuery) {
 	for (var city in DATA) {
+		if (!Object.prototype.hasOwnProperty.call(DATA, city)) {
+			continue;
+		}
+
 		var universityList = DATA[city];
 
 		for (var university in universityList) {
+			if (!Object.prototype.hasOwnProperty.call(universityList, university)) {
+				continue;
+			}
+
 			var nameList = universityList[university];
 
 			for (var i = 0, l = nameList.length; i < l; i++) {
@@ -160,6 +171,9 @@ function findMarkerByUniversityAndCity (university, city) {
 	return null;
 }
 
+/**
+ * 当地图标记尚未生成时，按大学 + 城市兜底地理编码并定位。
+ */
 function locateDataMatch (map, dataMatch) {
 	var geo = new BMap.Geocoder();
 	geo.getPoint(dataMatch.university, function (point) {
@@ -379,6 +393,9 @@ function showMarkerInfo (map, marker, point) {
 	map.openInfoWindow(infoWindow, point);
 }
 
+/**
+ * 对动态文本做 HTML 转义，避免注入到 InfoWindow HTML 时被解析为标签。
+ */
 function escapeHTML (text) {
 	return String(text == null ? "" : text)
 		.replace(/&/g, "&amp;")
