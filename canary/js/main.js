@@ -13,8 +13,14 @@ let geocoder;
 /** 已解析过的大学坐标缓存 { "大学名": T.LngLat | null } */
 const geoCache = {};
 
-/** 各班当前在地图上的标记列表 */
-const classMarkers = { 1: [], 2: [], 3: [], 4: [] };
+/** 当前显示在地图上的标记列表（按当前复选状态整体重算） */
+let activeMarkers = [];
+
+/** 当前显示标记索引（大学名 -> marker），供搜索定位后打开信息窗 */
+let activeMarkerByUniversity = {};
+
+/** 标记渲染版本号，用于忽略过期异步地理编码回调 */
+let markerRenderVersion = 0;
 
 /** 各班颜色 */
 const CLASS_COLORS = {
@@ -23,6 +29,7 @@ const CLASS_COLORS = {
   3: '#f59e0b', // 琥珀
   4: '#ef4444'  // 红
 };
+const MERGED_MARKER_COLOR = '#9ca3af'; // 多班同校合并标记（灰）
 
 /** 全班数据引用（在 onTMapCallback 中绑定） */
 const ALL_CLASS_DATA = {};
@@ -166,16 +173,12 @@ window.onTMapCallback = function () {
 function setupMapEventListeners() {
   // 班级复选框 → 显示/隐藏标记
   for (let i = 1; i <= 4; i++) {
-    (function (classNum) {
-      document.getElementById('class' + classNum).addEventListener('change', function () {
-        if (this.checked) {
-          loadClassMarkers(classNum);
-        } else {
-          removeClassMarkers(classNum);
-        }
+    (function () {
+      document.getElementById('class' + i).addEventListener('change', function () {
+        renderSelectedMarkers();
         updateTotalCount();
       });
-    })(i);
+    })();
   }
 
   // 搜索框（需要 T.LocalSearch，依赖地图对象）
@@ -187,40 +190,71 @@ function setupMapEventListeners() {
 
 /* ─── 标记加载 / 移除 ────────────────────────────────────── */
 
-/** 按大学分组，返回 [{ university, city, students[] }] */
-function groupByUniversity(classNum) {
-  const groups = {};
-  ALL_CLASS_DATA[classNum].forEach(function (student) {
-    if (!groups[student.university]) {
-      groups[student.university] = {
-        university: student.university,
-        city: student.city,
-        students: []
-      };
-    }
-    groups[student.university].students.push(student.name);
-  });
-  return Object.values(groups);
+/** 获取当前勾选的班级列表 */
+function getSelectedClasses() {
+  const selected = [];
+  for (let i = 1; i <= 4; i++) {
+    if (document.getElementById('class' + i).checked) selected.push(i);
+  }
+  return selected;
 }
 
-/** 加载某班级的地图标记 */
-function loadClassMarkers(classNum) {
-  const groups = groupByUniversity(classNum);
-  groups.forEach(function (group) {
-    enqueueGeocode(group.university, group.city, function (point) {
-      if (point) {
-        addMarkerToMap(classNum, point, group);
+/**
+ * 合并当前已勾选班级的大学去向
+ * 返回 [{ university, city, totalStudents, classNums[], studentsByClass }]
+ */
+function groupSelectedByUniversity(selectedClasses) {
+  const groups = {};
+  selectedClasses.forEach(function (classNum) {
+    (ALL_CLASS_DATA[classNum] || []).forEach(function (student) {
+      if (!groups[student.university]) {
+        groups[student.university] = {
+          university: student.university,
+          city: student.city || '',
+          totalStudents: 0,
+          classNums: [],
+          studentsByClass: {}
+        };
       }
+      const group = groups[student.university];
+      if (!group.city && student.city) group.city = student.city;
+      if (!group.studentsByClass[classNum]) {
+        group.studentsByClass[classNum] = [];
+        group.classNums.push(classNum);
+      }
+      group.studentsByClass[classNum].push(student.name);
+      group.totalStudents++;
     });
   });
+  return Object.values(groups).map(function (group) {
+    group.classNums.sort(function (a, b) { return a - b; });
+    return group;
+  });
 }
 
-/** 移除某班级的全部地图标记 */
-function removeClassMarkers(classNum) {
-  classMarkers[classNum].forEach(function (marker) {
+/** 清空当前地图标记 */
+function clearActiveMarkers() {
+  activeMarkers.forEach(function (marker) {
     removeMapOverlay(marker);
   });
-  classMarkers[classNum] = [];
+  activeMarkers = [];
+  activeMarkerByUniversity = {};
+}
+
+/** 按当前复选框状态重算并渲染标记 */
+function renderSelectedMarkers() {
+  const selectedClasses = getSelectedClasses();
+  const renderVersion = ++markerRenderVersion;
+  clearActiveMarkers();
+  if (selectedClasses.length === 0) return;
+
+  const groups = groupSelectedByUniversity(selectedClasses);
+  groups.forEach(function (group) {
+    enqueueGeocode(group.university, group.city, function (point) {
+      if (renderVersion !== markerRenderVersion || !point) return;
+      addMarkerToMap(point, group);
+    });
+  });
 }
 
 /* ─── 标记创建 ──────────────────────────────────────────── */
@@ -238,9 +272,10 @@ function createPinIcon(color) {
   return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 }
 
-/** 在地图上添加一个班级标记 */
-function addMarkerToMap(classNum, point, group) {
-  const color = CLASS_COLORS[classNum];
+/** 在地图上添加一个标记（可能是多班合并） */
+function addMarkerToMap(point, group) {
+  const merged = group.classNums.length > 1;
+  const color = merged ? MERGED_MARKER_COLOR : CLASS_COLORS[group.classNums[0]];
   const icon = new T.Icon({
     iconUrl: createPinIcon(color),
     iconSize: new T.Point(36, 48),
@@ -250,8 +285,12 @@ function addMarkerToMap(classNum, point, group) {
   const marker = new T.Marker(point, { icon: icon });
 
   // 悬停提示（大学名 + 人数 + 同学姓名）
-  const labelText = group.university + '（' + group.students.length + '人）';
-  const studentsText = group.students.join('、');
+  const labelText = group.university + '（' + group.totalStudents + '人）';
+  const studentsText = group.classNums.map(function (classNum) {
+    return (group.studentsByClass[classNum] || []).map(function (name) {
+      return classNum + '班·' + name;
+    }).join('、');
+  }).filter(function (text) { return text; }).join('、');
   const safeLabelText = escapeHTML(labelText);
   const safeStudentsText = escapeHTML(studentsText);
   const hoverInfoWindow = new T.InfoWindow(
@@ -270,9 +309,8 @@ function addMarkerToMap(classNum, point, group) {
   });
 
   // 点击弹出信息窗口
-  const infoContent = buildInfoWindowHTML(classNum, group, color);
+  const infoContent = buildInfoWindowHTML(group, color, merged);
   const infoWindow = new T.InfoWindow(infoContent, { autoPan: true });
-  marker.__classNum = classNum;
   marker.__university = group.university;
   marker.__infoWindow = infoWindow;
   marker.addEventListener('click', function () {
@@ -280,26 +318,40 @@ function addMarkerToMap(classNum, point, group) {
   });
 
   addMapOverlay(marker);
-  classMarkers[classNum].push(marker);
+  activeMarkers.push(marker);
+  activeMarkerByUniversity[group.university] = marker;
 }
 
 /** 构建信息窗口 HTML（使用内联样式，避免被地图默认样式覆盖） */
-function buildInfoWindowHTML(classNum, group, color) {
-  const studentItems = group.students.map(function (name) {
-    return '<li style="padding:3px 0;font-size:13px;color:#1e293b;">&#8226; ' + escapeHTML(name) + '</li>';
+function buildInfoWindowHTML(group, color, merged) {
+  const classSections = group.classNums.map(function (classNum) {
+    const classColor = CLASS_COLORS[classNum];
+    const students = group.studentsByClass[classNum] || [];
+    const studentItems = students.map(function (name) {
+      return '<li style="padding:3px 0;font-size:13px;color:#1e293b;">&#8226; ' + escapeHTML(name) + '</li>';
+    }).join('');
+    return '<div style="margin-top:10px;">'
+      + '<div style="display:inline-flex;align-items:center;gap:6px;background:' + classColor + '1f;border:1px solid ' + classColor + '55;border-radius:999px;padding:2px 10px;">'
+      + '<span style="width:7px;height:7px;border-radius:50%;background:' + classColor + ';"></span>'
+      + '<span style="font-size:12px;font-weight:700;color:#334155;">' + classNum + '班</span>'
+      + '<span style="font-size:11px;color:#64748b;">' + students.length + '人</span>'
+      + '</div>'
+      + '<ul style="list-style:none;padding:6px 0 0 0;margin:0;">' + studentItems + '</ul>'
+      + '</div>';
   }).join('');
   const safeUniversity = escapeHTML(group.university);
   const safeCity = escapeHTML(group.city);
+  const classBadgeText = merged ? '多班合并' : (group.classNums[0] + '班');
 
   return '<div style="font-family:-apple-system,BlinkMacSystemFont,\'PingFang SC\',\'Microsoft YaHei\',sans-serif;min-width:220px;border-radius:8px;overflow:hidden;">'
     + '<div style="background:' + color + ';padding:10px 14px;display:flex;align-items:center;gap:8px;">'
-    + '<span style="background:rgba(255,255,255,0.25);padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;color:white;">' + classNum + '班</span>'
+    + '<span style="background:rgba(255,255,255,0.25);padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;color:white;">' + classBadgeText + '</span>'
     + '<span style="font-size:14px;font-weight:700;color:white;">' + safeUniversity + '</span>'
     + '</div>'
     + '<div style="padding:12px 14px;background:white;">'
     + '<div style="font-size:12px;color:#64748b;margin-bottom:8px;">&#x1F4CD; ' + safeCity + '</div>'
-    + '<div style="font-size:12px;color:#475569;font-weight:600;margin-bottom:4px;">就读同学（' + group.students.length + '人）</div>'
-    + '<ul style="list-style:none;padding:0;margin:0;">' + studentItems + '</ul>'
+    + '<div style="font-size:12px;color:#475569;font-weight:600;margin-bottom:4px;">就读同学（' + group.totalStudents + '人）</div>'
+    + classSections
     + '</div>'
     + '</div>';
 }
@@ -374,10 +426,7 @@ function focusOnStudentMatch(query, matches) {
 }
 
 function openMatchedMarkerInfoWindow(target) {
-  const markers = classMarkers[target.classNum] || [];
-  const marker = markers.find(function (m) {
-    return m.__university === target.university;
-  });
+  const marker = activeMarkerByUniversity[target.university];
   if (marker && marker.__infoWindow && typeof marker.openInfoWindow === 'function') {
     marker.openInfoWindow(marker.__infoWindow);
   }
