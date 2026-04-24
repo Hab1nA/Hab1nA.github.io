@@ -303,7 +303,7 @@ function performSearch() {
   const localSearch = new T.LocalSearch(map, {
     pageCapacity: 10,
     onSearchComplete: function (result) {
-      if (result && parseInt(result.getResultType(), 10) === TMAP_SEARCH_RESULT_POI) {
+      if (result && Number(result.getResultType()) === TMAP_SEARCH_RESULT_POI) {
         const pois = result.getPois();
         if (pois && pois.length > 0 && typeof pois[0].lonlat === 'string') {
           const lnglatArr = pois[0].lonlat.split(',');
