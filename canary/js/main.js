@@ -252,10 +252,12 @@ function addMarkerToMap(classNum, point, group) {
   // 悬停提示（大学名 + 人数 + 同学姓名）
   const labelText = group.university + '（' + group.students.length + '人）';
   const studentsText = group.students.join('、');
+  const safeLabelText = escapeHTML(labelText);
+  const safeStudentsText = escapeHTML(studentsText);
   const hoverInfoWindow = new T.InfoWindow(
     '<div style="padding:6px 8px;background:rgba(15,23,42,0.88);color:#f1f5f9;border-radius:6px;max-width:280px;">'
-      + '<div style="font-size:12px;white-space:nowrap;">' + labelText + '</div>'
-      + '<div style="margin-top:4px;font-size:12px;line-height:1.45;word-break:break-all;">同学：' + studentsText + '</div>'
+      + '<div style="font-size:12px;white-space:nowrap;">' + safeLabelText + '</div>'
+      + '<div style="margin-top:4px;font-size:12px;line-height:1.45;word-break:break-all;">同学：' + safeStudentsText + '</div>'
       + '</div>',
     { autoPan: false }
   );
@@ -284,16 +286,18 @@ function addMarkerToMap(classNum, point, group) {
 /** 构建信息窗口 HTML（使用内联样式，避免被地图默认样式覆盖） */
 function buildInfoWindowHTML(classNum, group, color) {
   const studentItems = group.students.map(function (name) {
-    return '<li style="padding:3px 0;font-size:13px;color:#1e293b;">&#8226; ' + name + '</li>';
+    return '<li style="padding:3px 0;font-size:13px;color:#1e293b;">&#8226; ' + escapeHTML(name) + '</li>';
   }).join('');
+  const safeUniversity = escapeHTML(group.university);
+  const safeCity = escapeHTML(group.city);
 
   return '<div style="font-family:-apple-system,BlinkMacSystemFont,\'PingFang SC\',\'Microsoft YaHei\',sans-serif;min-width:220px;border-radius:8px;overflow:hidden;">'
     + '<div style="background:' + color + ';padding:10px 14px;display:flex;align-items:center;gap:8px;">'
     + '<span style="background:rgba(255,255,255,0.25);padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;color:white;">' + classNum + '班</span>'
-    + '<span style="font-size:14px;font-weight:700;color:white;">' + group.university + '</span>'
+    + '<span style="font-size:14px;font-weight:700;color:white;">' + safeUniversity + '</span>'
     + '</div>'
     + '<div style="padding:12px 14px;background:white;">'
-    + '<div style="font-size:12px;color:#64748b;margin-bottom:8px;">&#x1F4CD; ' + group.city + '</div>'
+    + '<div style="font-size:12px;color:#64748b;margin-bottom:8px;">&#x1F4CD; ' + safeCity + '</div>'
     + '<div style="font-size:12px;color:#475569;font-weight:600;margin-bottom:4px;">就读同学（' + group.students.length + '人）</div>'
     + '<ul style="list-style:none;padding:0;margin:0;">' + studentItems + '</ul>'
     + '</div>'
@@ -420,19 +424,23 @@ function buildStatsContent() {
   }).join('');
 
   const cityBarsHTML = topCities.map(function (entry) {
+    const cityName = escapeHTML(entry[0]);
     const pct = (entry[1] / maxCity * 100).toFixed(1);
     return '<div class="bar-row">'
-      + '<span class="bar-label">' + entry[0] + '</span>'
+      + '<span class="bar-label">' + cityName + '</span>'
       + '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:#3b82f6;"></div></div>'
       + '<span class="bar-count">' + entry[1] + '人</span>'
       + '</div>';
   }).join('');
 
   const uniBarsHTML = topUnis.map(function (entry) {
-    const name = entry[0].length > UNI_LABEL_MAX_LEN ? entry[0].slice(0, UNI_LABEL_MAX_LEN) + '…' : entry[0];
+    const uniName = entry[0];
+    const name = uniName.length > UNI_LABEL_MAX_LEN ? uniName.slice(0, UNI_LABEL_MAX_LEN) + '…' : uniName;
+    const safeName = escapeHTML(name);
+    const safeUniName = escapeHTML(uniName);
     const pct  = (entry[1] / maxUni * 100).toFixed(1);
     return '<div class="bar-row">'
-      + '<span class="bar-label" title="' + entry[0] + '">' + name + '</span>'
+      + '<span class="bar-label" title="' + safeUniName + '">' + safeName + '</span>'
       + '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:#10b981;"></div></div>'
       + '<span class="bar-count">' + entry[1] + '人</span>'
       + '</div>';
@@ -511,4 +519,13 @@ function showToast(msg) {
   toastTimer = setTimeout(function () {
     toast.classList.remove('show');
   }, 3000);
+}
+
+function escapeHTML(text) {
+  return String(text == null ? '' : text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
