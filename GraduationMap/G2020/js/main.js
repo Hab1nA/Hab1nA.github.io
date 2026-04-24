@@ -210,6 +210,7 @@ function groupSelectedByUniversity(selectedClasses) {
           university: student.university,
           city: student.city || '',
           coordinate: null,
+          coordinateConflict: false,
           totalStudents: 0,
           classNums: [],
           studentsByClass: {}
@@ -217,9 +218,14 @@ function groupSelectedByUniversity(selectedClasses) {
       }
       const group = groups[student.university];
       if (!group.city && student.city) group.city = student.city;
-      if (!group.coordinate) {
-        const coordinate = parseStudentCoordinate(student);
-        if (coordinate) group.coordinate = coordinate;
+      const coordinate = parseStudentCoordinate(student);
+      if (coordinate) {
+        if (!group.coordinate) {
+          group.coordinate = coordinate;
+        } else if (!isSameCoordinate(group.coordinate, coordinate)) {
+          group.coordinate = null;
+          group.coordinateConflict = true;
+        }
       }
       if (!group.studentsByClass[classNum]) {
         group.studentsByClass[classNum] = [];
@@ -254,7 +260,7 @@ function renderSelectedMarkers() {
   const groups = groupSelectedByUniversity(selectedClasses);
   groups.forEach(function (group) {
     if (renderVersion !== markerRenderVersion) return;
-    if (group.coordinate) {
+    if (!group.coordinateConflict && group.coordinate) {
       addMarkerToMap(toLngLat(group.coordinate), group);
       return;
     }
@@ -572,6 +578,11 @@ function parseStudentCoordinate(student) {
 
 function toLngLat(coordinate) {
   return new T.LngLat(coordinate.lng, coordinate.lat);
+}
+
+function isSameCoordinate(a, b) {
+  if (!a || !b) return false;
+  return a.lng === b.lng && a.lat === b.lat;
 }
 
 function addMapOverlay(overlay) {
