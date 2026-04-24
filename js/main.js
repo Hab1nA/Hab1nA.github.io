@@ -89,27 +89,110 @@ function searchAndLocate (map, keyword) {
 		return;
 	}
 
-	var lowerQuery = query.toLowerCase();
+	var normalizedQuery = normalizeSearchKeyword(query);
 	var list = Statistics.markers;
 	var target = null;
 
 	for (var i = 0, l = list.length; i < l; i++) {
 		var marker = list[i];
-		var haystack = (marker.m_city + " " + marker.m_university + " " + marker.m_names).toLowerCase();
-		if (haystack.indexOf(lowerQuery) >= 0) {
+		var haystack = normalizeSearchKeyword(marker.m_city + " " + marker.m_university + " " + marker.m_names);
+		if (haystack.indexOf(normalizedQuery) >= 0) {
 			target = marker;
 			break;
 		}
 	}
 
 	if (!target) {
-		alert("未找到匹配项：" + query);
-		return;
+		var dataMatch = findDataMatch(normalizedQuery);
+		if (!dataMatch) {
+			alert("未找到匹配项：" + query);
+			return;
+		}
+
+		target = findMarkerByUniversityAndCity(dataMatch.university, dataMatch.city);
+		if (!target) {
+			locateDataMatch(map, dataMatch);
+			return;
+		}
 	}
 
 	var point = target.getPosition();
 	map.centerAndZoom(point, Math.max(ZOOM_LEVEL, map.getZoom()));
 	showMarkerInfo(map, target, point);
+}
+
+/**
+ * 统一搜索关键字格式：去首尾空格、转小写，并移除所有空白字符（含中间空格）。
+ */
+function normalizeSearchKeyword (text) {
+	return $.trim(String(text == null ? "" : text)).toLowerCase().replace(/\s+/g, "");
+}
+
+function findDataMatch (normalizedQuery) {
+	for (var city in DATA) {
+		if (!Object.prototype.hasOwnProperty.call(DATA, city)) {
+			continue;
+		}
+
+		var universityList = DATA[city];
+
+		for (var university in universityList) {
+			if (!Object.prototype.hasOwnProperty.call(universityList, university)) {
+				continue;
+			}
+
+			var nameList = universityList[university];
+
+			for (var i = 0, l = nameList.length; i < l; i++) {
+				var name = nameList[i];
+				var haystack = normalizeSearchKeyword(city + " " + university + " " + name);
+				if (haystack.indexOf(normalizedQuery) >= 0) {
+					return {
+						city : city,
+						university : university,
+						name : name
+					};
+				}
+			}
+		}
+	}
+
+	return null;
+}
+
+function findMarkerByUniversityAndCity (university, city) {
+	var list = Statistics.markers;
+	for (var i = 0, l = list.length; i < l; i++) {
+		var marker = list[i];
+		if (marker.m_university === university && marker.m_city === city) {
+			return marker;
+		}
+	}
+	return null;
+}
+
+/**
+ * 当地图标记尚未生成时，按大学 + 城市兜底地理编码并定位。
+ */
+function locateDataMatch (map, dataMatch) {
+	var geo = new BMap.Geocoder();
+	geo.getPoint(dataMatch.university, function (point) {
+		if (!point) {
+			var safeName = String(dataMatch.name == null ? "" : dataMatch.name).replace(/[\r\n]/g, " ");
+			alert("找到同学“" + safeName + "”，但暂时无法定位其大学。");
+			return;
+		}
+
+		map.centerAndZoom(point, Math.max(ZOOM_LEVEL, map.getZoom()));
+		var opts = {
+			width : 220,
+			title : escapeHTML(dataMatch.university),
+			enableMessage : false
+		};
+		var content = "同学：" + escapeHTML(dataMatch.name) + "<br />城市：" + escapeHTML(dataMatch.city);
+		var infoWindow = new BMap.InfoWindow(content, opts);
+		map.openInfoWindow(infoWindow, point);
+	}, dataMatch.city);
 }
 
 function initConfigSwitch (map) {
@@ -309,6 +392,18 @@ function showMarkerInfo (map, marker, point) {
 
 	var infoWindow = new BMap.InfoWindow(zoom < ZOOM_LEVEL ? marker.m_cityInfo : marker.m_universityInfo, opts);
 	map.openInfoWindow(infoWindow, point);
+}
+
+/**
+ * 对动态文本做 HTML 转义，避免注入到 InfoWindow HTML 时被解析为标签。
+ */
+function escapeHTML (text) {
+	return String(text == null ? "" : text)
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#39;");
 }
 
 function hideOverlayMarkers (map) {
