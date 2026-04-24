@@ -1,21 +1,197 @@
-/**
- * 1班同学毕业去向数据
- * 格式：{ name: 姓名, university: 就读大学, city: 所在城市 }
- */
 const class1Data = [
-  { name: "陈梦琪", university: "四川大学", city: "成都" },
-  { name: "李浩然", university: "电子科技大学", city: "成都" },
-  { name: "王芸瑞", university: "北京大学", city: "北京" },
-  { name: "张伟航", university: "西南交通大学", city: "成都" },
-  { name: "刘佳欣", university: "浙江大学", city: "杭州" },
-  { name: "周昊宇", university: "同济大学", city: "上海" },
-  { name: "吴思涵", university: "武汉大学", city: "武汉" },
-  { name: "赵雨晴", university: "西南财经大学", city: "成都" },
-  { name: "钱博远", university: "重庆大学", city: "重庆" },
-  { name: "孙倩倩", university: "中山大学", city: "广州" },
-  { name: "黄志成", university: "天津大学", city: "天津" },
-  { name: "林美君", university: "南京大学", city: "南京" },
-  { name: "杨博文", university: "中国人民大学", city: "北京" },
-  { name: "徐嘉宝", university: "成都理工大学", city: "成都" },
-  { name: "何艺璇", university: "厦门大学", city: "厦门" }
+  {
+    "name": "郑睿恒",
+    "university": "北京大学",
+    "city": "北京"
+  },
+  {
+    "name": "张楚媛",
+    "university": "北京大学",
+    "city": "北京"
+  },
+  {
+    "name": "朱映羲",
+    "university": "北京大学医学部",
+    "city": "北京"
+  },
+  {
+    "name": "李雨桐",
+    "university": "北京航空航天大学",
+    "city": "北京"
+  },
+  {
+    "name": "谢铠舟",
+    "university": "北京航空航天大学",
+    "city": "北京"
+  },
+  {
+    "name": "邓思豪",
+    "university": "中国科学院大学",
+    "city": "北京"
+  },
+  {
+    "name": "陈宪",
+    "university": "中国人民公安大学",
+    "city": "北京"
+  },
+  {
+    "name": "林晟周",
+    "university": "电子科技大学(沙河校区)",
+    "city": "成都"
+  },
+  {
+    "name": "潘思颖",
+    "university": "电子科技大学(沙河校区)",
+    "city": "成都"
+  },
+  {
+    "name": "钟思雨",
+    "university": "四川大学",
+    "city": "成都"
+  },
+  {
+    "name": "徐浩然",
+    "university": "华南理工大学",
+    "city": "广州"
+  },
+  {
+    "name": "彭昊楠",
+    "university": "中山大学",
+    "city": "广州"
+  },
+  {
+    "name": "孙若尧",
+    "university": "中国科学技术大学",
+    "city": "合肥"
+  },
+  {
+    "name": "刘恩荣",
+    "university": "山东大学",
+    "city": "济南"
+  },
+  {
+    "name": "何衍泽",
+    "university": "南京大学",
+    "city": "南京"
+  },
+  {
+    "name": "梁一铭",
+    "university": "南京大学",
+    "city": "南京"
+  },
+  {
+    "name": "温博凯",
+    "university": "宁波诺丁汉大学",
+    "city": "宁波"
+  },
+  {
+    "name": "江恺兮",
+    "university": "上海交通大学",
+    "city": "上海"
+  },
+  {
+    "name": "王渊弼",
+    "university": "上海交通大学",
+    "city": "上海"
+  },
+  {
+    "name": "周钰琦",
+    "university": "上海交通大学",
+    "city": "上海"
+  },
+  {
+    "name": "方舒雅",
+    "university": "同济大学",
+    "city": "上海"
+  },
+  {
+    "name": "刘晓冬",
+    "university": "同济大学",
+    "city": "上海"
+  },
+  {
+    "name": "马源胜",
+    "university": "同济大学",
+    "city": "上海"
+  },
+  {
+    "name": "王彦儒",
+    "university": "南方科技大学",
+    "city": "深圳"
+  },
+  {
+    "name": "罗雪菲",
+    "university": "香港中文大学(深圳)",
+    "city": "深圳"
+  },
+  {
+    "name": "宿培娴",
+    "university": "中山大学",
+    "city": "深圳"
+  },
+  {
+    "name": "陈里函",
+    "university": "东北大学",
+    "city": "沈阳"
+  },
+  {
+    "name": "青哮添",
+    "university": "哈尔滨工业大学(威海)",
+    "city": "威海"
+  },
+  {
+    "name": "李语心",
+    "university": "华中科技大学",
+    "city": "武汉"
+  },
+  {
+    "name": "宋孟阳",
+    "university": "华中科技大学",
+    "city": "武汉"
+  },
+  {
+    "name": "曹子宸",
+    "university": "武汉大学",
+    "city": "武汉"
+  },
+  {
+    "name": "李宛秋",
+    "university": "中国地质大学(武汉)",
+    "city": "武汉"
+  },
+  {
+    "name": "张雨阳",
+    "university": "西安电子科技大学",
+    "city": "西安"
+  },
+  {
+    "name": "章雪雁",
+    "university": "西安交通大学",
+    "city": "西安"
+  },
+  {
+    "name": "胡怡凡",
+    "university": "西北工业大学",
+    "city": "西安"
+  },
+  {
+    "name": "朱梅可芸",
+    "university": "帝国理工学院",
+    "city": "英国"
+  },
+  {
+    "name": "邹亦峰",
+    "university": "重庆大学",
+    "city": "重庆"
+  },
+  {
+    "name": "黄腾中",
+    "university": "中山大学",
+    "city": "珠海"
+  },
+  {
+    "name": "陈彦兴",
+    "university": "南开大学",
+    "city": "天津"
+  }
 ];
