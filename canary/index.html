@@ -168,7 +168,7 @@
   -->
   <script src="https://api.tianditu.gov.cn/api?v=4.0&tk=Dp1ulGnZZaG5jBIamrwB0vg2X6xytLcb"></script>
   <script>
-    if (typeof window.onTMapCallback === 'function') {
+    if (typeof window.onTMapCallback === 'function' && typeof window.T !== 'undefined') {
       window.onTMapCallback();
     }
   </script>
