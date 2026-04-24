@@ -2,7 +2,7 @@
  * 天府七中G2020级蹭饭图 — 主逻辑
  *
  * 依赖：
- *   - 百度地图 JavaScript API v3.0（index.html 中通过 callback=onBMapCallback 加载）
+ *   - 天地图 JavaScript API v4.0（index.html 中加载后调用 onTMapCallback）
  *   - data/class1..4.js（提供 class1Data..class4Data 全局变量）
  */
 
@@ -10,7 +10,7 @@
 let map;
 let geocoder;
 
-/** 已解析过的大学坐标缓存 { "大学名": BMap.Point | null } */
+/** 已解析过的大学坐标缓存 { "大学名": T.LngLat | null } */
 const geoCache = {};
 
 /** 各班当前在地图上的标记列表 */
@@ -24,7 +24,7 @@ const CLASS_COLORS = {
   4: '#ef4444'  // 红
 };
 
-/** 全班数据引用（在 onBMapCallback 中绑定） */
+/** 全班数据引用（在 onTMapCallback 中绑定） */
 const ALL_CLASS_DATA = {};
 
 /* ─── 地理编码队列 ──────────────────────────────────────── */
@@ -38,7 +38,7 @@ let toastTimer = null;
 /** 院校名称在 Top 列表中的最大显示字符数 */
 const UNI_LABEL_MAX_LEN = 9;
 
-/** 将一个大学名称加入编码队列，结果通过 callback(BMap.Point|null) 返回 */
+/** 将一个大学名称加入编码队列，结果通过 callback(T.LngLat|null) 返回 */
 function enqueueGeocode(university, city, callback) {
   if (Object.prototype.hasOwnProperty.call(geoCache, university)) {
     callback(geoCache[university]);
@@ -80,11 +80,20 @@ function processNextGeocode() {
     return;
   }
 
-  geocoder.getPoint(item.university, function (point) {
+  const keyword = (item.city ? item.city : '') + item.university;
+  geocoder.getPoint(keyword, function (result) {
+    let point = null;
+    if (result) {
+      if (typeof result.getStatus === 'function' && result.getStatus() === 0 && typeof result.getLocationPoint === 'function') {
+        point = result.getLocationPoint();
+      } else if (typeof result.lng === 'number' && typeof result.lat === 'number') {
+        point = new T.LngLat(result.lng, result.lat);
+      }
+    }
     geoCache[item.university] = point; // null 时表示未找到，也缓存，避免重复请求
     item.callback(point);
     setTimeout(processNextGeocode, 250);
-  }, item.city);
+  });
 }
 
 /* ─── DOM 就绪后立即初始化（无需等待地图 API） ───────────── */
@@ -131,31 +140,28 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
-/* ─── 地图初始化（百度地图 API 回调） ────────────────────── */
-window.onBMapCallback = function () {
-  map = new BMap.Map('map-container');
+/* ─── 地图初始化（天地图 API 回调） ──────────────────────── */
+window.onTMapCallback = function () {
+  map = new T.Map('map-container');
 
   // 以中国地理中心附近为初始视野
-  map.centerAndZoom(new BMap.Point(105.4, 37.9), 5);
-  map.enableScrollWheelZoom(true);
+  map.centerAndZoom(new T.LngLat(105.4, 37.9), 5);
+  map.enableScrollWheelZoom();
   map.setMinZoom(4);
   map.setMaxZoom(18);
 
-  // 缩放控件（仅加减按钮，位于左下）
-  map.addControl(new BMap.NavigationControl({
-    anchor: BMAP_ANCHOR_BOTTOM_LEFT,
-    type: BMAP_NAVIGATION_CONTROL_ZOOM,
-    offset: new BMap.Size(16, 60)
-  }));
+  // 缩放控件（位于左下）
+  const zoomControl = new T.Control.Zoom();
+  zoomControl.setPosition(T_ANCHOR_BOTTOM_LEFT);
+  map.addControl(zoomControl);
 
   // 比例尺（位于左下）
-  map.addControl(new BMap.ScaleControl({
-    anchor: BMAP_ANCHOR_BOTTOM_LEFT,
-    offset: new BMap.Size(16, 16)
-  }));
+  const scaleControl = new T.Control.Scale();
+  scaleControl.setPosition(T_ANCHOR_BOTTOM_LEFT);
+  map.addControl(scaleControl);
 
   // 初始化地理编码器
-  geocoder = new BMap.Geocoder();
+  geocoder = new T.Geocoder();
 
   // 绑定地图相关的 UI 事件
   setupMapEventListeners();
@@ -177,7 +183,7 @@ function setupMapEventListeners() {
     })(i);
   }
 
-  // 搜索框（需要 BMap.LocalSearch，依赖地图对象）
+  // 搜索框（需要 T.LocalSearch，依赖地图对象）
   document.getElementById('searchBtn').addEventListener('click', performSearch);
   document.getElementById('searchInput').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') performSearch();
@@ -217,7 +223,7 @@ function loadClassMarkers(classNum) {
 /** 移除某班级的全部地图标记 */
 function removeClassMarkers(classNum) {
   classMarkers[classNum].forEach(function (marker) {
-    map.removeOverlay(marker);
+    map.removeOverLay(marker);
   });
   classMarkers[classNum] = [];
 }
@@ -240,52 +246,42 @@ function createPinIcon(color) {
 /** 在地图上添加一个班级标记 */
 function addMarkerToMap(classNum, point, group) {
   const color = CLASS_COLORS[classNum];
-  const icon = new BMap.Icon(createPinIcon(color), new BMap.Size(36, 48), {
-    anchor: new BMap.Size(18, 46)
+  const icon = new T.Icon({
+    iconUrl: createPinIcon(color),
+    iconSize: new T.Point(36, 48),
+    iconAnchor: new T.Point(18, 46)
   });
 
-  const marker = new BMap.Marker(point, { icon: icon });
+  const marker = new T.Marker(point, { icon: icon });
 
-  // 悬停标签（大学名 + 人数）
+  // 悬停提示（大学名 + 人数）
   const labelText = group.university + '（' + group.students.length + '人）';
-  const label = new BMap.Label(labelText, { offset: new BMap.Size(22, -18) });
-  label.setStyle({
-    display: 'none',
-    background: 'rgba(15,23,42,0.88)',
-    color: '#f1f5f9',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '5px 10px',
-    fontSize: '12px',
-    fontFamily: '-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif',
-    whiteSpace: 'nowrap',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
-    pointerEvents: 'none'
-  });
-  marker.setLabel(label);
+  const hoverInfoWindow = new T.InfoWindow(
+    '<div style="padding:4px 8px;background:rgba(15,23,42,0.88);color:#f1f5f9;border-radius:6px;font-size:12px;white-space:nowrap;">'
+      + labelText +
+    '</div>',
+    { autoPan: false }
+  );
 
   marker.addEventListener('mouseover', function () {
-    label.setStyle({ display: 'block' });
+    marker.openInfoWindow(hoverInfoWindow);
   });
   marker.addEventListener('mouseout', function () {
-    label.setStyle({ display: 'none' });
+    marker.closeInfoWindow();
   });
 
   // 点击弹出信息窗口
   const infoContent = buildInfoWindowHTML(classNum, group, color);
-  const infoWindow = new BMap.InfoWindow(infoContent, {
-    width: 280,
-    enableMessage: false
-  });
+  const infoWindow = new T.InfoWindow(infoContent, { autoPan: true });
   marker.addEventListener('click', function () {
-    map.openInfoWindow(infoWindow, point);
+    marker.openInfoWindow(infoWindow);
   });
 
-  map.addOverlay(marker);
+  map.addOverLay(marker);
   classMarkers[classNum].push(marker);
 }
 
-/** 构建信息窗口 HTML（使用内联样式，避免被百度地图样式覆盖） */
+/** 构建信息窗口 HTML（使用内联样式，避免被地图默认样式覆盖） */
 function buildInfoWindowHTML(classNum, group, color) {
   const studentItems = group.students.map(function (name) {
     return '<li style="padding:3px 0;font-size:13px;color:#1e293b;">&#8226; ' + name + '</li>';
@@ -309,16 +305,21 @@ function performSearch() {
   const query = document.getElementById('searchInput').value.trim();
   if (!query) return;
 
-  const localSearch = new BMap.LocalSearch(map, {
-    onSearchComplete: function (results) {
-      if (localSearch.getStatus() === BMAP_STATUS_SUCCESS && results && results.getCurrentNumPois() > 0) {
-        const poi = results.getPoi(0);
-        map.centerAndZoom(poi.point, 14);
-      } else {
-        showToast('未找到"' + query + '"，请尝试其他关键词');
+  const localSearch = new T.LocalSearch(map, {
+    pageCapacity: 10,
+    onSearchComplete: function (result) {
+      if (result && parseInt(result.getResultType(), 10) === 1) {
+        const pois = result.getPois();
+        if (pois && pois.length > 0 && pois[0].lonlat) {
+          const lnglatArr = String(pois[0].lonlat).split(',');
+          if (lnglatArr.length === 2) {
+            map.centerAndZoom(new T.LngLat(parseFloat(lnglatArr[0]), parseFloat(lnglatArr[1])), 14);
+            return;
+          }
+        }
       }
-    },
-    renderOptions: { map: null, autoViewport: false }
+      showToast('未找到"' + query + '"，请尝试其他关键词');
+    }
   });
   localSearch.search(query);
 }
