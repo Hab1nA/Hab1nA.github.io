@@ -199,7 +199,7 @@ function getSelectedClasses() {
 
 /**
  * 合并当前已勾选班级的大学去向
- * 返回 [{ university, city, totalStudents, classNums[], studentsByClass }]
+ * 返回 [{ university, city, coordinate, totalStudents, classNums[], studentsByClass }]
  */
 function groupSelectedByUniversity(selectedClasses) {
   const groups = {};
@@ -209,6 +209,7 @@ function groupSelectedByUniversity(selectedClasses) {
         groups[student.university] = {
           university: student.university,
           city: student.city || '',
+          coordinate: null,
           totalStudents: 0,
           classNums: [],
           studentsByClass: {}
@@ -216,6 +217,10 @@ function groupSelectedByUniversity(selectedClasses) {
       }
       const group = groups[student.university];
       if (!group.city && student.city) group.city = student.city;
+      if (!group.coordinate) {
+        const coordinate = parseStudentCoordinate(student);
+        if (coordinate) group.coordinate = coordinate;
+      }
       if (!group.studentsByClass[classNum]) {
         group.studentsByClass[classNum] = [];
         group.classNums.push(classNum);
@@ -248,6 +253,11 @@ function renderSelectedMarkers() {
 
   const groups = groupSelectedByUniversity(selectedClasses);
   groups.forEach(function (group) {
+    if (renderVersion !== markerRenderVersion) return;
+    if (group.coordinate) {
+      addMarkerToMap(toLngLat(group.coordinate), group);
+      return;
+    }
     enqueueGeocode(group.university, group.city, function (point) {
       if (renderVersion !== markerRenderVersion || !point) return;
       addMarkerToMap(point, group);
@@ -402,7 +412,8 @@ function findStudentMatchesByName(query) {
           classNum: i,
           name: student.name,
           university: student.university,
-          city: student.city
+          city: student.city,
+          coordinate: parseStudentCoordinate(student)
         });
       }
     });
@@ -413,6 +424,13 @@ function findStudentMatchesByName(query) {
 function focusOnStudentMatch(query, matches) {
   const exact = matches.find(function (m) { return m.name === query; });
   const target = exact || matches[0];
+  if (target.coordinate) {
+    map.centerAndZoom(toLngLat(target.coordinate), 13);
+    openMatchedMarkerInfoWindow(target);
+    const extraByCoordinate = matches.length > 1 ? '，其余匹配：' + (matches.length - 1) + ' 人' : '';
+    showToast('已定位：' + target.name + '（' + target.classNum + '班 · ' + target.university + '）' + extraByCoordinate);
+    return;
+  }
   enqueueGeocode(target.university, target.city, function (point) {
     if (!point) {
       showToast('找到同学"' + target.name + '"，但未能定位其大学');
@@ -541,6 +559,18 @@ function parseGeocodeResult(result) {
     return new T.LngLat(result.lng, result.lat);
   }
   return null;
+}
+
+function parseStudentCoordinate(student) {
+  if (!student) return null;
+  const latitude = Number(student.latitude);
+  const longitude = Number(student.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  return { lng: longitude, lat: latitude };
+}
+
+function toLngLat(coordinate) {
+  return new T.LngLat(coordinate.lng, coordinate.lat);
 }
 
 function addMapOverlay(overlay) {
