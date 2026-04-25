@@ -299,7 +299,7 @@ function addMarkerToMap(point, group) {
 
   // 悬停与点击统一信息样式
   const infoContent = buildInfoWindowHTML(group, color, merged);
-  const hoverInfoWindow = new T.InfoWindow(infoContent, { autoPan: false });
+  const hoverInfoWindow = new T.InfoWindow(infoContent, { autoPan: false, closeButton: false });
 
   marker.addEventListener('mouseover', function () {
     marker.openInfoWindow(hoverInfoWindow);
@@ -309,7 +309,7 @@ function addMarkerToMap(point, group) {
   });
 
   // 点击弹出信息窗口
-  const infoWindow = new T.InfoWindow(infoContent, { autoPan: true });
+  const infoWindow = new T.InfoWindow(infoContent, { autoPan: true, closeButton: false });
   marker.__university = group.university;
   marker.__infoWindow = infoWindow;
   marker.addEventListener('click', function () {
