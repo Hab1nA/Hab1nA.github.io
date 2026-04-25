@@ -10,7 +10,7 @@
 let map;
 let geocoder;
 
-/** 已解析过的大学坐标缓存 { "大学名": T.LngLat | null } */
+/** 已解析过的大学坐标缓存 { "城市|大学": T.LngLat | null } */
 const geoCache = {};
 
 /** 当前显示在地图上的标记列表（按当前复选状态整体重算） */
@@ -49,8 +49,9 @@ const TMAP_SEARCH_RESULT_POI = 1;
 
 /** 将一个大学名称加入编码队列，结果通过 callback(T.LngLat|null) 返回 */
 function enqueueGeocode(university, city, callback) {
-  if (Object.prototype.hasOwnProperty.call(geoCache, university)) {
-    callback(geoCache[university]);
+  const cacheKey = buildGeocodeCacheKey(city, university);
+  if (Object.prototype.hasOwnProperty.call(geoCache, cacheKey)) {
+    callback(geoCache[cacheKey]);
     return;
   }
 
@@ -60,6 +61,7 @@ function enqueueGeocode(university, city, callback) {
   geocodeQueue.push({
     university,
     city,
+    cacheKey,
     callback: function (point) {
       callback(point);
       pendingGeocodesCount--;
@@ -83,19 +85,31 @@ function processNextGeocode() {
   const item = geocodeQueue.shift();
 
   // 再次检查缓存（避免重复请求同一大学）
-  if (Object.prototype.hasOwnProperty.call(geoCache, item.university)) {
-    item.callback(geoCache[item.university]);
+  if (Object.prototype.hasOwnProperty.call(geoCache, item.cacheKey)) {
+    item.callback(geoCache[item.cacheKey]);
     setTimeout(processNextGeocode, 10);
     return;
   }
 
-  const keyword = (item.city || '') + item.university;
+  const keyword = buildGeocodeKeyword(item.city, item.university);
   geocoder.getPoint(keyword, function (result) {
     const point = parseGeocodeResult(result);
-    geoCache[item.university] = point; // null 时表示未找到，也缓存，避免重复请求
+    geoCache[item.cacheKey] = point; // null 时表示未找到，也缓存，避免重复请求
     item.callback(point);
     setTimeout(processNextGeocode, 250);
   });
+}
+
+function buildGeocodeCacheKey(city, university) {
+  const safeCity = (city || '').trim();
+  const safeUniversity = (university || '').trim();
+  return safeCity + '|' + safeUniversity;
+}
+
+function buildGeocodeKeyword(city, university) {
+  const safeCity = (city || '').trim();
+  const safeUniversity = (university || '').trim();
+  return safeCity ? (safeCity + ' ' + safeUniversity) : safeUniversity;
 }
 
 /* ─── DOM 就绪后立即初始化（无需等待地图 API） ───────────── */
