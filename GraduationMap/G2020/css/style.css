@@ -9,6 +9,7 @@
   --panel-bg: rgba(255, 255, 255, 0.97);
   --panel-shadow: 0 8px 36px rgba(0, 0, 0, 0.18);
   --radius: 14px;
+  --brand: #3b82f6;
   --c1: #a74bb6;
   --c2: #10b981;
   --c3: #f59e0b;
@@ -108,7 +109,7 @@ body {
   justify-content: center;
   transition: var(--ease);
 }
-.search-btn:hover { background: #3b82f6; }
+.search-btn:hover { background: var(--brand); }
 
 .action-btn {
   background: rgba(255, 255, 255, 0.09);
@@ -261,7 +262,7 @@ body {
   width: 40px;
   height: 40px;
   border: 3px solid #e2e8f0;
-  border-top-color: var(--c1);
+  border-top-color: var(--brand);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -351,9 +352,9 @@ body {
 .about-section li { margin-bottom: 3px; }
 .about-section code {
   background: #f1f5f9; padding: 1px 6px; border-radius: 4px;
-  font-size: 12px; font-family: 'JetBrains Mono','Fira Code',monospace; color: var(--c1);
+  font-size: 12px; font-family: 'JetBrains Mono','Fira Code',monospace; color: var(--brand);
 }
-.about-section a { color: var(--c1); text-decoration: none; }
+.about-section a { color: var(--brand); text-decoration: none; }
 .about-section a:hover { text-decoration: underline; }
 
 /* ── 数据统计 modal 内容 ── */
