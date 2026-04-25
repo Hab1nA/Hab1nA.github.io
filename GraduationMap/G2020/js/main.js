@@ -24,10 +24,10 @@ let markerRenderVersion = 0;
 
 /** 各班颜色 */
 const CLASS_COLORS = {
-  1: '#3b82f6', // 蓝
+  1: '#a74bb6', // 紫
   2: '#10b981', // 绿
   3: '#f59e0b', // 琥珀
-  4: '#ef4444'  // 红
+  4: '#a3292b'  // 红
 };
 const MERGED_MARKER_COLOR = '#9ca3af'; // 多班同校合并标记（灰）
 
