@@ -297,24 +297,9 @@ function addMarkerToMap(point, group) {
 
   const marker = new T.Marker(point, { icon: icon });
 
-  // 悬停提示（大学名 + 人数 + 同学姓名）
-  const labelText = group.university + '（' + group.totalStudents + '人）';
-  const studentsTextParts = [];
-  group.classNums.forEach(function (classNum) {
-    (group.studentsByClass[classNum] || []).forEach(function (name) {
-      studentsTextParts.push(classNum + '班·' + name);
-    });
-  });
-  const studentsText = studentsTextParts.join('、');
-  const safeLabelText = escapeHTML(labelText);
-  const safeStudentsText = escapeHTML(studentsText);
-  const hoverInfoWindow = new T.InfoWindow(
-    '<div style="padding:6px 8px;background:rgba(15,23,42,0.88);color:#f1f5f9;border-radius:6px;max-width:280px;">'
-      + '<div style="font-size:12px;white-space:nowrap;">' + safeLabelText + '</div>'
-      + '<div style="margin-top:4px;font-size:12px;line-height:1.45;word-break:break-all;">同学：' + safeStudentsText + '</div>'
-      + '</div>',
-    { autoPan: false }
-  );
+  // 悬停与点击统一信息样式
+  const infoContent = buildInfoWindowHTML(group);
+  const hoverInfoWindow = new T.InfoWindow(infoContent, { autoPan: false });
 
   marker.addEventListener('mouseover', function () {
     marker.openInfoWindow(hoverInfoWindow);
@@ -324,7 +309,6 @@ function addMarkerToMap(point, group) {
   });
 
   // 点击弹出信息窗口
-  const infoContent = buildInfoWindowHTML(group, color, merged);
   const infoWindow = new T.InfoWindow(infoContent, { autoPan: true });
   marker.__university = group.university;
   marker.__infoWindow = infoWindow;
@@ -338,36 +322,20 @@ function addMarkerToMap(point, group) {
 }
 
 /** 构建信息窗口 HTML（使用内联样式，避免被地图默认样式覆盖） */
-function buildInfoWindowHTML(group, color, merged) {
-  const classSections = group.classNums.map(function (classNum) {
-    const classColor = CLASS_COLORS[classNum];
-    const students = group.studentsByClass[classNum] || [];
-    const studentItems = students.map(function (name) {
-      return '<li style="padding:3px 0;font-size:13px;color:#1e293b;">&#8226; ' + escapeHTML(name) + '</li>';
-    }).join('');
-    return '<div style="margin-top:10px;">'
-      + '<div style="display:inline-flex;align-items:center;gap:6px;background:' + classColor + '1f;border:1px solid ' + classColor + '55;border-radius:999px;padding:2px 10px;">'
-      + '<span style="width:7px;height:7px;border-radius:50%;background:' + classColor + ';"></span>'
-      + '<span style="font-size:12px;font-weight:700;color:#334155;">' + classNum + '班</span>'
-      + '<span style="font-size:11px;color:#64748b;">' + students.length + '人</span>'
-      + '</div>'
-      + '<ul style="list-style:none;padding:6px 0 0 0;margin:0;">' + studentItems + '</ul>'
-      + '</div>';
-  }).join('');
-  const safeUniversity = escapeHTML(group.university);
-  const safeCity = escapeHTML(group.city);
-  const classBadgeText = merged ? '多班合并' : (group.classNums[0] + '班');
-
-  return '<div style="font-family:-apple-system,BlinkMacSystemFont,\'PingFang SC\',\'Microsoft YaHei\',sans-serif;min-width:220px;border-radius:8px;overflow:hidden;">'
-    + '<div style="background:' + color + ';padding:10px 14px;display:flex;align-items:center;gap:8px;">'
-    + '<span style="background:rgba(255,255,255,0.25);padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;color:white;">' + classBadgeText + '</span>'
-    + '<span style="font-size:14px;font-weight:700;color:white;">' + safeUniversity + '</span>'
-    + '</div>'
-    + '<div style="padding:12px 14px;background:white;">'
-    + '<div style="font-size:12px;color:#64748b;margin-bottom:8px;">&#x1F4CD; ' + safeCity + '</div>'
-    + '<div style="font-size:12px;color:#475569;font-weight:600;margin-bottom:4px;">就读同学（' + group.totalStudents + '人）</div>'
-    + classSections
-    + '</div>'
+function buildInfoWindowHTML(group) {
+  const labelText = group.university + '（' + group.totalStudents + '人）';
+  const studentsTextParts = [];
+  group.classNums.forEach(function (classNum) {
+    (group.studentsByClass[classNum] || []).forEach(function (name) {
+      studentsTextParts.push(classNum + '班·' + name);
+    });
+  });
+  const studentsText = studentsTextParts.join('、');
+  const safeLabelText = escapeHTML(labelText);
+  const safeStudentsText = escapeHTML(studentsText);
+  return '<div style="padding:6px 8px;background:rgba(15,23,42,0.88);color:#f1f5f9;border-radius:6px;max-width:280px;">'
+    + '<div style="font-size:12px;white-space:nowrap;">' + safeLabelText + '</div>'
+    + '<div style="margin-top:4px;font-size:12px;line-height:1.45;word-break:break-all;">同学：' + safeStudentsText + '</div>'
     + '</div>';
 }
 
