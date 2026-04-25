@@ -297,24 +297,9 @@ function addMarkerToMap(point, group) {
 
   const marker = new T.Marker(point, { icon: icon });
 
-  // 悬停提示（大学名 + 人数 + 同学姓名）
-  const labelText = group.university + '（' + group.totalStudents + '人）';
-  const studentsTextParts = [];
-  group.classNums.forEach(function (classNum) {
-    (group.studentsByClass[classNum] || []).forEach(function (name) {
-      studentsTextParts.push(classNum + '班·' + name);
-    });
-  });
-  const studentsText = studentsTextParts.join('、');
-  const safeLabelText = escapeHTML(labelText);
-  const safeStudentsText = escapeHTML(studentsText);
-  const hoverInfoWindow = new T.InfoWindow(
-    '<div style="padding:6px 8px;background:rgba(15,23,42,0.88);color:#f1f5f9;border-radius:6px;max-width:280px;">'
-      + '<div style="font-size:12px;white-space:nowrap;">' + safeLabelText + '</div>'
-      + '<div style="margin-top:4px;font-size:12px;line-height:1.45;word-break:break-all;">同学：' + safeStudentsText + '</div>'
-      + '</div>',
-    { autoPan: false }
-  );
+  // 悬停与点击统一信息样式
+  const infoContent = buildInfoWindowHTML(group, color, merged);
+  const hoverInfoWindow = new T.InfoWindow(infoContent, { autoPan: false });
 
   marker.addEventListener('mouseover', function () {
     marker.openInfoWindow(hoverInfoWindow);
@@ -324,7 +309,6 @@ function addMarkerToMap(point, group) {
   });
 
   // 点击弹出信息窗口
-  const infoContent = buildInfoWindowHTML(group, color, merged);
   const infoWindow = new T.InfoWindow(infoContent, { autoPan: true });
   marker.__university = group.university;
   marker.__infoWindow = infoWindow;
