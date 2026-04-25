@@ -351,9 +351,9 @@ body {
 .about-section li { margin-bottom: 3px; }
 .about-section code {
   background: #f1f5f9; padding: 1px 6px; border-radius: 4px;
-  font-size: 12px; font-family: 'JetBrains Mono','Fira Code',monospace; color: var(--c1);
+  font-size: 12px; font-family: 'JetBrains Mono','Fira Code',monospace; color: #3b82f6;
 }
-.about-section a { color: var(--c1); text-decoration: none; }
+.about-section a { color: #3b82f6; text-decoration: none; }
 .about-section a:hover { text-decoration: underline; }
 
 /* ── 数据统计 modal 内容 ── */
