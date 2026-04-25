@@ -413,3 +413,16 @@ body {
 .tdt-control-zoom {
   margin-bottom: 8px !important;
 }
+
+/* 地图信息窗：隐藏关闭按钮并改为圆角边框 */
+.tdt-infowindow-close,
+.tdt-infowindow-close-button,
+.tdt-popup-close-button {
+  display: none !important;
+}
+
+.tdt-infowindow-content-wrapper,
+.tdt-popup-content-wrapper {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
