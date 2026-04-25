@@ -49,7 +49,13 @@ const TMAP_SEARCH_RESULT_POI = 1;
 
 /** 将一个大学名称加入编码队列，结果通过 callback(T.LngLat|null) 返回 */
 function enqueueGeocode(university, city, callback) {
-  const cacheKey = buildGeocodeCacheKey(city, university);
+  const normalizedUniversity = (university || '').trim();
+  if (!normalizedUniversity) {
+    callback(null);
+    return;
+  }
+  const normalizedCity = (city || '').trim();
+  const cacheKey = buildGeocodeCacheKey(normalizedCity, normalizedUniversity);
   if (Object.prototype.hasOwnProperty.call(geoCache, cacheKey)) {
     callback(geoCache[cacheKey]);
     return;
@@ -59,8 +65,8 @@ function enqueueGeocode(university, city, callback) {
   updateLoadingOverlay();
 
   geocodeQueue.push({
-    university,
-    city,
+    university: normalizedUniversity,
+    city: normalizedCity,
     cacheKey,
     callback: function (point) {
       callback(point);
