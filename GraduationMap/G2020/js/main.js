@@ -16,8 +16,8 @@ const geoCache = {};
 /** 当前显示在地图上的标记列表（按当前复选状态整体重算） */
 let activeMarkers = [];
 
-/** 当前显示标记索引（大学名 -> marker），供搜索定位后打开信息窗 */
-let activeMarkerByUniversity = {};
+/** 当前显示标记索引（城市|大学 -> marker），供搜索定位后打开信息窗 */
+let activeMarkerByCityUniversity = {};
 
 /** 标记渲染版本号，用于忽略过期异步地理编码回调 */
 let markerRenderVersion = 0;
@@ -267,7 +267,7 @@ function clearActiveMarkers() {
     removeMapOverlay(marker);
   });
   activeMarkers = [];
-  activeMarkerByUniversity = {};
+  activeMarkerByCityUniversity = {};
 }
 
 /** 按当前复选框状态重算并渲染标记 */
@@ -338,7 +338,8 @@ function addMarkerToMap(point, group) {
 
   addMapOverlay(marker);
   activeMarkers.push(marker);
-  activeMarkerByUniversity[group.university] = marker;
+  const markerKey = buildGeocodeCacheKey(group.city, group.university);
+  activeMarkerByCityUniversity[markerKey] = marker;
 }
 
 /** 构建信息窗口 HTML（使用内联样式，避免被地图默认样式覆盖） */
@@ -453,7 +454,8 @@ function focusOnStudentMatch(query, matches) {
 }
 
 function openMatchedMarkerInfoWindow(target) {
-  const marker = activeMarkerByUniversity[target.university];
+  const markerKey = buildGeocodeCacheKey(target.city, target.university);
+  const marker = activeMarkerByCityUniversity[markerKey];
   if (marker && marker.__infoWindow && typeof marker.openInfoWindow === 'function') {
     marker.openInfoWindow(marker.__infoWindow);
   }
