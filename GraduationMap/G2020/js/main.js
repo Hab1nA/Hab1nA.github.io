@@ -90,7 +90,7 @@ function processNextGeocode() {
   geocodingActive = true;
   const item = geocodeQueue.shift();
 
-  // 再次检查缓存（避免重复请求同一大学）
+  // 再次检查缓存（避免重复请求同一“城市|大学”组合）
   if (Object.prototype.hasOwnProperty.call(geoCache, item.cacheKey)) {
     item.callback(geoCache[item.cacheKey]);
     setTimeout(processNextGeocode, 10);
