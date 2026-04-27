@@ -10,14 +10,14 @@
 let map;
 let geocoder;
 
-/** 已解析过的大学坐标缓存 { "大学名": T.LngLat | null } */
+/** 已解析过的大学坐标缓存 { "城市|大学": T.LngLat | null } */
 const geoCache = {};
 
 /** 当前显示在地图上的标记列表（按当前复选状态整体重算） */
 let activeMarkers = [];
 
-/** 当前显示标记索引（大学名 -> marker），供搜索定位后打开信息窗 */
-let activeMarkerByUniversity = {};
+/** 当前显示标记索引（城市|大学 -> marker），供搜索定位后打开信息窗 */
+let activeMarkerByCityUniversity = {};
 
 /** 标记渲染版本号，用于忽略过期异步地理编码回调 */
 let markerRenderVersion = 0;
@@ -49,8 +49,15 @@ const TMAP_SEARCH_RESULT_POI = 1;
 
 /** 将一个大学名称加入编码队列，结果通过 callback(T.LngLat|null) 返回 */
 function enqueueGeocode(university, city, callback) {
-  if (Object.prototype.hasOwnProperty.call(geoCache, university)) {
-    callback(geoCache[university]);
+  const normalizedUniversity = (university || '').trim();
+  if (!normalizedUniversity) {
+    callback(null);
+    return;
+  }
+  const normalizedCity = (city || '').trim();
+  const cacheKey = buildGeocodeCacheKey(normalizedCity, normalizedUniversity);
+  if (Object.prototype.hasOwnProperty.call(geoCache, cacheKey)) {
+    callback(geoCache[cacheKey]);
     return;
   }
 
@@ -58,8 +65,9 @@ function enqueueGeocode(university, city, callback) {
   updateLoadingOverlay();
 
   geocodeQueue.push({
-    university,
-    city,
+    university: normalizedUniversity,
+    city: normalizedCity,
+    cacheKey,
     callback: function (point) {
       callback(point);
       pendingGeocodesCount--;
@@ -82,20 +90,32 @@ function processNextGeocode() {
   geocodingActive = true;
   const item = geocodeQueue.shift();
 
-  // 再次检查缓存（避免重复请求同一大学）
-  if (Object.prototype.hasOwnProperty.call(geoCache, item.university)) {
-    item.callback(geoCache[item.university]);
+  // 再次检查缓存（避免重复请求同一“城市|大学”组合）
+  if (Object.prototype.hasOwnProperty.call(geoCache, item.cacheKey)) {
+    item.callback(geoCache[item.cacheKey]);
     setTimeout(processNextGeocode, 10);
     return;
   }
 
-  const keyword = (item.city || '') + item.university;
+  const keyword = buildGeocodeKeyword(item.city, item.university);
   geocoder.getPoint(keyword, function (result) {
     const point = parseGeocodeResult(result);
-    geoCache[item.university] = point; // null 时表示未找到，也缓存，避免重复请求
+    geoCache[item.cacheKey] = point; // null 时表示未找到，也缓存，避免重复请求
     item.callback(point);
     setTimeout(processNextGeocode, 250);
   });
+}
+
+function buildGeocodeCacheKey(city, university) {
+  const safeCity = (city || '').trim();
+  const safeUniversity = (university || '').trim();
+  return safeCity + '|' + safeUniversity;
+}
+
+function buildGeocodeKeyword(city, university) {
+  const safeCity = (city || '').trim();
+  const safeUniversity = (university || '').trim();
+  return safeCity ? (safeCity + ' ' + safeUniversity) : safeUniversity;
 }
 
 /* ─── DOM 就绪后立即初始化（无需等待地图 API） ───────────── */
@@ -247,7 +267,7 @@ function clearActiveMarkers() {
     removeMapOverlay(marker);
   });
   activeMarkers = [];
-  activeMarkerByUniversity = {};
+  activeMarkerByCityUniversity = {};
 }
 
 /** 按当前复选框状态重算并渲染标记 */
@@ -318,7 +338,8 @@ function addMarkerToMap(point, group) {
 
   addMapOverlay(marker);
   activeMarkers.push(marker);
-  activeMarkerByUniversity[group.university] = marker;
+  const markerKey = buildGeocodeCacheKey(group.city, group.university);
+  activeMarkerByCityUniversity[markerKey] = marker;
 }
 
 /** 构建信息窗口 HTML（使用内联样式，避免被地图默认样式覆盖） */
@@ -433,7 +454,8 @@ function focusOnStudentMatch(query, matches) {
 }
 
 function openMatchedMarkerInfoWindow(target) {
-  const marker = activeMarkerByUniversity[target.university];
+  const markerKey = buildGeocodeCacheKey(target.city, target.university);
+  const marker = activeMarkerByCityUniversity[markerKey];
   if (marker && marker.__infoWindow && typeof marker.openInfoWindow === 'function') {
     marker.openInfoWindow(marker.__infoWindow);
   }
