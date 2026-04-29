@@ -373,12 +373,12 @@ function buildInfoWindowHTML(group, color, merged) {
   }).join('');
   const safeUniversity = escapeHTML(group.university);
   const safeCity = escapeHTML(group.city);
-  const classBadgeText = merged ? '多班合并' : (group.classNums[0] + '班');
+  const classBadgeText = merged ? '多班<br>合并' : (group.classNums[0] + '班');
 
   return '<div style="font-family:-apple-system,BlinkMacSystemFont,\'PingFang SC\',\'Microsoft YaHei\',sans-serif;min-width:220px;border-radius:8px;overflow:hidden;">'
-    + '<div style="background:' + color + ';padding:10px 14px;display:flex;align-items:center;gap:8px;">'
-    + '<span style="background:rgba(255,255,255,0.25);padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;color:white;">' + classBadgeText + '</span>'
-    + '<span style="font-size:14px;font-weight:700;color:white;">' + safeUniversity + '</span>'
+    + '<div style="background:' + color + ';padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:0;">'
+    + '<span style="background:rgba(255,255,255,0.25);padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;color:white;flex-shrink:0;white-space:nowrap;">' + classBadgeText + '</span>'
+    + '<marquee style="font-size:14px;font-weight:700;color:white;width:100%;" scrollamount="3">' + safeUniversity + '</marquee>'
     + '</div>'
     + '<div style="padding:12px 14px;background:white;">'
     + '<div style="font-size:12px;color:#64748b;margin-bottom:8px;">&#x1F4CD; ' + safeCity + '</div>'
