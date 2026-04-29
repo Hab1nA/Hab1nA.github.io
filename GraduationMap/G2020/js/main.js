@@ -1026,9 +1026,9 @@ function escapeHTML(text) {
 }
 
 /**
- * 将"数据缺失"面板定位在"班级筛选"面板上方固定 20px 处。
+ * 将"数据缺失"面板定位在"班级筛选"面板上方固定 16px 处。
  * 通过计算 classPanel 的 top 值（视口高度 - bottom - height）来获得班级筛选面板顶部位置，
- * 然后将 missingPanel 的底部放在 classPanel 顶部 + 20px 的位置。
+ * 然后将 missingPanel 的底部放在 classPanel 顶部 + 16px 的位置。
  */
 function positionMissingPanel() {
   var missingPanel = document.getElementById('missingDataToggle');
