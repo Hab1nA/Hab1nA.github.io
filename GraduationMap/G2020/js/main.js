@@ -42,6 +42,13 @@ let pendingGeocodesCount = 0;
 /** Toast 计时器（模块级，避免存到 DOM 元素上） */
 let toastTimer = null;
 
+/** 当前搜索结果列表（多结果导航用） */
+let searchResults = [];
+/** 当前正在查看的搜索结果索引 */
+let searchResultIndex = 0;
+/** 请求版本号：每次 goToSearchResult 调用时递增，用于丢弃过期异步回调 */
+let searchNavRequestId = 0;
+
 /** 院校名称在 Top 列表中的最大显示字符数 */
 const UNI_LABEL_MAX_LEN = 9;
 const TMAP_GEOCODE_SUCCESS = 0;
@@ -184,6 +191,21 @@ function setupMapEventListeners() {
   document.getElementById('searchInput').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') performSearch();
   });
+
+  // 搜索结果导航条
+  document.getElementById('searchNavPrev').addEventListener('click', function () {
+    if (searchResultIndex > 0) {
+      searchResultIndex--;
+      goToSearchResult();
+    }
+  });
+  document.getElementById('searchNavNext').addEventListener('click', function () {
+    if (searchResultIndex < searchResults.length - 1) {
+      searchResultIndex++;
+      goToSearchResult();
+    }
+  });
+  document.getElementById('searchNavClose').addEventListener('click', hideSearchNav);
 }
 
 /* ─── 标记加载 / 移除 ────────────────────────────────────── */
@@ -360,6 +382,9 @@ function performSearch() {
   const query = document.getElementById('searchInput').value.trim();
   if (!query) return;
 
+  // 新搜索开始时清除旧导航条
+  hideSearchNav();
+
   // 优先支持同学姓名检索
   const studentMatches = findStudentMatchesByName(query);
   if (studentMatches.length > 0) {
@@ -411,25 +436,78 @@ function findStudentMatchesByName(query) {
 }
 
 function focusOnStudentMatch(query, matches) {
-  const exact = matches.find(function (m) { return m.name === query; });
-  const target = exact || matches[0];
+  // 记录所有结果，优先选精确匹配
+  searchResults = matches.slice();
+  const exactIdx = matches.findIndex(function (m) { return m.name === query; });
+  searchResultIndex = exactIdx >= 0 ? exactIdx : 0;
+
+  goToSearchResult();
+
+  if (matches.length > 1) {
+    showSearchNav();
+  } else {
+    hideSearchNav();
+    showToast('已定位：' + matches[0].name + '（' + matches[0].classNum + '班 · ' + matches[0].university + '）');
+  }
+}
+
+/** 定位到当前搜索结果（由 searchResultIndex 决定）并更新导航条 */
+function goToSearchResult() {
+  const target = getCurrentSearchResult();
+  if (!target) return;
+  updateSearchNavInfo();
+  const requestId = ++searchNavRequestId;
   if (target.coordinate) {
     map.centerAndZoom(toLngLat(target.coordinate), 13);
     openMatchedMarkerInfoWindow(target);
-    const extraMatches = matches.length > 1 ? '，其余匹配：' + (matches.length - 1) + ' 人' : '';
-    showToast('已定位：' + target.name + '（' + target.classNum + '班 · ' + target.university + '）' + extraMatches);
     return;
   }
   enqueueGeocode(target.university, target.city, function (point) {
+    if (requestId !== searchNavRequestId) return; // 导航已切换，丢弃过期回调
     if (!point) {
       showToast('找到同学"' + target.name + '"，但未能定位其大学');
       return;
     }
     map.centerAndZoom(point, 13);
     openMatchedMarkerInfoWindow(target);
-    const extra = matches.length > 1 ? '，其余匹配：' + (matches.length - 1) + ' 人' : '';
-    showToast('已定位：' + target.name + '（' + target.classNum + '班 · ' + target.university + '）' + extra);
   });
+}
+
+/** 返回当前搜索结果条目，越界时返回 null */
+function getCurrentSearchResult() {
+  if (searchResultIndex < 0 || searchResultIndex >= searchResults.length) return null;
+  return searchResults[searchResultIndex];
+}
+
+/** 显示搜索结果导航条 */
+function showSearchNav() {
+  updateSearchNavInfo();
+  document.getElementById('searchNav').classList.add('show');
+}
+
+/** 隐藏并清空搜索结果导航条 */
+function hideSearchNav() {
+  searchResults = [];
+  searchResultIndex = 0;
+  searchNavRequestId++;  // 使任何仍在飞行中的地理编码回调失效
+  document.getElementById('searchNav').classList.remove('show');
+}
+
+/** 刷新导航条的文字与按钮状态 */
+function updateSearchNavInfo() {
+  const target = getCurrentSearchResult();
+  if (!target) return;
+  const navInfo = document.getElementById('searchNavInfo');
+  navInfo.innerHTML =
+    '<span class="nav-index">' + (searchResultIndex + 1) + '</span>'
+    + '<span class="nav-sep"> / </span>'
+    + '<span class="nav-total">' + searchResults.length + '</span>'
+    + '<span class="nav-label">'
+    + escapeHTML(target.name)
+    + '（' + target.classNum + '班&middot;' + escapeHTML(target.university) + '）'
+    + '</span>';
+  document.getElementById('searchNavPrev').disabled = searchResultIndex === 0;
+  document.getElementById('searchNavNext').disabled = searchResultIndex === searchResults.length - 1;
 }
 
 function openMatchedMarkerInfoWindow(target) {

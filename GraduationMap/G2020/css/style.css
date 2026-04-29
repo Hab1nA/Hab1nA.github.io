@@ -111,6 +111,82 @@ body {
 }
 .search-btn:hover { background: var(--brand); }
 
+/* ── 搜索结果导航条 ── */
+.search-nav {
+  display: none;
+  position: fixed;
+  top: calc(var(--hdr-h) + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1100;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 5px 8px 5px 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  color: #f1f5f9;
+  font-size: 13px;
+  white-space: nowrap;
+  max-width: calc(100vw - 40px);
+  overflow: hidden;
+}
+.search-nav.show {
+  display: flex;
+  animation: search-nav-in 0.22s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+@keyframes search-nav-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.search-nav-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--ease);
+  flex-shrink: 0;
+}
+.search-nav-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.22); }
+.search-nav-btn:disabled { opacity: 0.3; cursor: default; }
+.search-nav-info {
+  padding: 0 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-nav-info .nav-index { color: #93c5fd; font-weight: 700; }
+.search-nav-info .nav-sep   { color: #475569; }
+.search-nav-info .nav-total { color: #64748b; }
+.search-nav-info .nav-label { color: #cbd5e1; margin-left: 6px; }
+.search-nav-close {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 13px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--ease);
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+.search-nav-close:hover { background: rgba(255, 255, 255, 0.1); color: #e2e8f0; }
+
 .action-btn {
   background: rgba(255, 255, 255, 0.09);
   border: 1px solid rgba(255, 255, 255, 0.14);
