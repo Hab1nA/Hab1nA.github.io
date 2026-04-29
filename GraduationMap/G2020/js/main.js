@@ -46,6 +46,8 @@ let toastTimer = null;
 let searchResults = [];
 /** 当前正在查看的搜索结果索引 */
 let searchResultIndex = 0;
+/** 请求版本号：每次 goToSearchResult 调用时递增，用于丢弃过期异步回调 */
+let searchNavRequestId = 0;
 
 /** 院校名称在 Top 列表中的最大显示字符数 */
 const UNI_LABEL_MAX_LEN = 9;
@@ -454,12 +456,14 @@ function goToSearchResult() {
   const target = getCurrentSearchResult();
   if (!target) return;
   updateSearchNavInfo();
+  const requestId = ++searchNavRequestId;
   if (target.coordinate) {
     map.centerAndZoom(toLngLat(target.coordinate), 13);
     openMatchedMarkerInfoWindow(target);
     return;
   }
   enqueueGeocode(target.university, target.city, function (point) {
+    if (requestId !== searchNavRequestId) return; // 导航已切换，丢弃过期回调
     if (!point) {
       showToast('找到同学"' + target.name + '"，但未能定位其大学');
       return;
@@ -485,6 +489,7 @@ function showSearchNav() {
 function hideSearchNav() {
   searchResults = [];
   searchResultIndex = 0;
+  searchNavRequestId++;  // 使任何仍在飞行中的地理编码回调失效
   document.getElementById('searchNav').classList.remove('show');
 }
 
