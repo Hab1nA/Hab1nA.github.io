@@ -107,6 +107,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  align-self: stretch;
   transition: var(--ease);
 }
 .search-btn:hover { background: var(--brand); }
