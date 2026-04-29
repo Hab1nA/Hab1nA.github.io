@@ -151,13 +151,12 @@ body {
   height: 28px;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 15px;
-  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: var(--ease);
   flex-shrink: 0;
+  padding: 0;
 }
 .search-nav-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.22); }
 .search-nav-btn:disabled { opacity: 0.3; cursor: default; }
@@ -175,7 +174,6 @@ body {
   border: none;
   color: #64748b;
   cursor: pointer;
-  font-size: 13px;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -185,6 +183,7 @@ body {
   transition: var(--ease);
   flex-shrink: 0;
   margin-left: 2px;
+  padding: 0;
 }
 .search-nav-close:hover { background: rgba(255, 255, 255, 0.1); color: #e2e8f0; }
 

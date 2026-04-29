@@ -513,7 +513,6 @@ function focusOnStudentMatch(query, matches) {
   if (matches.length > 1) {
     showSearchNav();
   } else {
-    hideSearchNav(false);
     showToast('已定位：' + matches[0].name + '（' + matches[0].classNum + '班 · ' + matches[0].university + '）');
   }
 }
@@ -533,7 +532,6 @@ function focusOnUniversityMatch(query, matches) {
   if (matches.length > 1) {
     showSearchNav();
   } else {
-    hideSearchNav(false);
     const m = searchResults[0];
     const classStr = m.classNums.map(function (c) { return c + '班'; }).join('·');
     showToast('已定位：' + m.university + '（' + classStr + '·共' + m.totalStudents + '人）');
