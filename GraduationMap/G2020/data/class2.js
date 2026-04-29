@@ -1,12 +1,12 @@
 const class2Data = [
   {
     "name": "蒋雨宸",
-    "university": "北京航空航天大学",
+    "university": "北京航空航天大学（学院路校区）",
     "city": "北京"
   },
   {
     "name": "唐子懿",
-    "university": "北京航空航天大学",
+    "university": "北京航空航天大学（沙河校区）",
     "city": "北京"
   },
   {
@@ -16,7 +16,7 @@ const class2Data = [
   },
   {
     "name": "郑欣宜",
-    "university": "北京邮电大学(宏福校区)",
+    "university": "北京邮电大学",
     "city": "北京"
   },
   {
@@ -36,17 +36,17 @@ const class2Data = [
   },
   {
     "name": "范鹤立",
-    "university": "电子科技大学(沙河校区)",
+    "university": "电子科技大学（沙河校区）",
     "city": "成都"
   },
   {
     "name": "鲜奕彬",
-    "university": "电子科技大学(沙河校区)",
+    "university": "电子科技大学（沙河校区）",
     "city": "成都"
   },
   {
     "name": "姚淳远",
-    "university": "电子科技大学(沙河校区)",
+    "university": "电子科技大学（沙河校区）",
     "city": "成都"
   },
   {
@@ -161,7 +161,7 @@ const class2Data = [
   },
   {
     "name": "秦杰",
-    "university": "上海交通大学",
+    "university": "上海交通大学（闵行校区）",
     "city": "上海"
   }
 ];

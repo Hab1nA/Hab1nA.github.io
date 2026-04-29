@@ -36,12 +36,12 @@ const class4Data = [
   },
   {
     "name": "何尊祺",
-    "university": "中国社会科学院大学",
+    "university": "中国社会科学院大学（良乡校区）",
     "city": "北京"
   },
   {
     "name": "杨璐佳",
-    "university": "中国政法大学",
+    "university": "中国政法大学（海淀校区）",
     "city": "北京"
   },
   {
@@ -156,7 +156,7 @@ const class4Data = [
   },
   {
     "name": "何淼",
-    "university": "哈尔滨工业大学(深圳)",
+    "university": "哈尔滨工业大学（深圳）",
     "city": "深圳"
   },
   {
@@ -196,7 +196,7 @@ const class4Data = [
   },
   {
     "name": "李钰坤",
-    "university": "合肥工业大学(宣城校区)",
+    "university": "合肥工业大学（宣城校区）",
     "city": "宣城"
   },
   {

@@ -11,7 +11,7 @@ const class3Data = [
   },
   {
     "name": "程琳杰",
-    "university": "中国矿业大学(北京)",
+    "university": "中国矿业大学（北京）",
     "city": "北京"
   },
   {
@@ -41,7 +41,7 @@ const class3Data = [
   },
   {
     "name": "田易宸",
-    "university": "电子科技大学(沙河校区)",
+    "university": "电子科技大学（沙河校区）",
     "city": "成都"
   },
   {
@@ -166,7 +166,7 @@ const class3Data = [
   },
   {
     "name": "张英杰",
-    "university": "中国地质大学(武汉)",
+    "university": "中国地质大学（武汉）",
     "city": "武汉"
   },
   {
