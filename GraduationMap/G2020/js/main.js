@@ -25,6 +25,9 @@ let searchPinnedMarker = null;
 /** 搜索时被临时替换了信息窗的已有标记（关闭搜索时恢复其原始信息窗） */
 let patchedExistingMarker = null;
 
+/** 搜索定位时直接打开了信息窗的已有标记（关闭搜索时需关闭其信息窗） */
+let searchOpenedExistingMarker = null;
+
 /** 标记渲染版本号，用于忽略过期异步地理编码回调 */
 let markerRenderVersion = 0;
 
@@ -592,6 +595,7 @@ function openOrPinSearchResult(target, point) {
     if (allClassesCovered) {
       // 搜索结果班级全部被当前勾选覆盖，直接用已有信息窗
       existingMarker.openInfoWindow(existingMarker.__infoWindow);
+      searchOpenedExistingMarker = existingMarker;
       return;
     }
 
@@ -724,15 +728,23 @@ function hideSearchNav(clearPinnedMarker) {
 
 /** 移除搜索定位时临时添加的标记，并恢复被临时替换信息窗的已有标记 */
 function clearSearchPinnedMarker() {
-  if (searchPinnedMarker) {
-    removeMapOverlay(searchPinnedMarker);
-    searchPinnedMarker = null;
-  }
+     if (searchPinnedMarker) {
+      searchPinnedMarker.closeInfoWindow();
+      removeMapOverlay(searchPinnedMarker);
+      searchPinnedMarker = null;
+    }
 
-  // 恢复被搜索临时替换了信息窗的已有标记
+  // 恢复被搜索临时替换了信息窗的已有标记，并关闭其当前信息窗
   if (patchedExistingMarker) {
+    patchedExistingMarker.marker.closeInfoWindow();
     patchedExistingMarker.marker.__infoWindow = patchedExistingMarker.origInfoWindow;
     patchedExistingMarker = null;
+  }
+
+  // 关闭搜索定位时直接打开信息窗的已有标记的信息窗
+  if (searchOpenedExistingMarker) {
+    searchOpenedExistingMarker.closeInfoWindow();
+    searchOpenedExistingMarker = null;
   }
 }
 
