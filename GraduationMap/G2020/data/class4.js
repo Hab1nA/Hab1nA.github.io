@@ -151,7 +151,7 @@ const class4Data = [
   },
   {
     "name": "李萌萌",
-    "university": "同济大学",
+    "university": "同济大学（四平路校区）",
     "city": "上海"
   },
   {
