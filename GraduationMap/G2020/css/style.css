@@ -319,8 +319,7 @@ body {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(5px);
+  background: rgba(0, 0, 0, 0.45);
   z-index: 2000;
   align-items: center;
   justify-content: center;
@@ -341,6 +340,7 @@ body {
   border: 3px solid #e2e8f0;
   border-top-color: var(--brand);
   border-radius: 50%;
+  will-change: transform;
   animation: spin 0.5s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
