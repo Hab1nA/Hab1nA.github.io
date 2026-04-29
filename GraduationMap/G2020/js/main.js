@@ -393,13 +393,21 @@ function performSearch() {
   // 新搜索开始时清除旧导航条
   hideSearchNav();
 
-  // 优先支持同学姓名检索
+  // 第一步：同学姓名检索
   const studentMatches = findStudentMatchesByName(query);
   if (studentMatches.length > 0) {
     focusOnStudentMatch(query, studentMatches);
     return;
   }
 
+  // 第二步：大学名称检索
+  const universityMatches = findUniversityMatches(query);
+  if (universityMatches.length > 0) {
+    focusOnUniversityMatch(query, universityMatches);
+    return;
+  }
+
+  // 都未匹配
   showToast('未找到"' + query + '"，请尝试其他关键词');
 }
 
@@ -422,10 +430,56 @@ function findStudentMatchesByName(query) {
   return matches;
 }
 
+function findUniversityMatches(query) {
+  const q = query.toLowerCase();
+  const groups = {};
+  for (let i = 1; i <= 4; i++) {
+    (ALL_CLASS_DATA[i] || []).forEach(function (student) {
+      if ((student.university || '').toLowerCase().indexOf(q) !== -1) {
+        if (!groups[student.university]) {
+          groups[student.university] = {
+            university: student.university,
+            city: student.city || '',
+            coordinate: null,
+            coordinateConflict: false,
+            totalStudents: 0,
+            classNums: [],
+            studentsByClass: {}
+          };
+        }
+        const group = groups[student.university];
+        if (!group.city && student.city) group.city = student.city;
+        const coord = parseStudentCoordinate(student);
+        if (coord) {
+          if (!group.coordinate) {
+            group.coordinate = coord;
+          } else if (!isSameCoordinate(group.coordinate, coord)) {
+            group.coordinate = null;
+            group.coordinateConflict = true;
+          }
+        }
+        if (!group.studentsByClass[i]) {
+          group.studentsByClass[i] = [];
+          group.classNums.push(i);
+        }
+        group.studentsByClass[i].push(student.name);
+        group.totalStudents++;
+      }
+    });
+  }
+  return Object.values(groups).map(function (group) {
+    group.classNums.sort(function (a, b) { return a - b; });
+    return group;
+  });
+}
+
 function focusOnStudentMatch(query, matches) {
-  // 记录所有结果，优先选精确匹配
-  searchResults = matches.slice();
-  const exactIdx = matches.findIndex(function (m) { return m.name === query; });
+  // 记录所有结果，每个结果加 type 标记为 'student'
+  searchResults = matches.map(function (m) {
+    m.type = 'student';
+    return m;
+  });
+  const exactIdx = searchResults.findIndex(function (m) { return m.name === query; });
   searchResultIndex = exactIdx >= 0 ? exactIdx : 0;
 
   goToSearchResult();
@@ -435,6 +489,28 @@ function focusOnStudentMatch(query, matches) {
   } else {
     hideSearchNav(false);
     showToast('已定位：' + matches[0].name + '（' + matches[0].classNum + '班 · ' + matches[0].university + '）');
+  }
+}
+
+function focusOnUniversityMatch(query, matches) {
+  // 记录所有大学匹配结果，每个结果加 type 标记为 'university'
+  searchResults = matches.map(function (m) {
+    m.type = 'university';
+    return m;
+  });
+  // 优先精确匹配大学全名
+  const exactIdx = searchResults.findIndex(function (m) { return m.university === query; });
+  searchResultIndex = exactIdx >= 0 ? exactIdx : 0;
+
+  goToSearchResult();
+
+  if (matches.length > 1) {
+    showSearchNav();
+  } else {
+    hideSearchNav(false);
+    const m = searchResults[0];
+    const classStr = m.classNums.map(function (c) { return c + '班'; }).join('·');
+    showToast('已定位：' + m.university + '（' + classStr + '·共' + m.totalStudents + '人）');
   }
 }
 
@@ -453,7 +529,11 @@ function goToSearchResult() {
   enqueueGeocode(target.university, target.city, function (point) {
     if (requestId !== searchNavRequestId) return; // 导航已切换，丢弃过期回调
     if (!point) {
-      showToast('找到同学"' + target.name + '"，但未能定位其大学');
+      if (target.type === 'university') {
+        showToast('找到大学"' + target.university + '"，但未能定位其位置');
+      } else {
+        showToast('找到同学"' + target.name + '"，但未能定位其大学');
+      }
       return;
     }
     map.centerAndZoom(point, 13);
@@ -462,8 +542,9 @@ function goToSearchResult() {
 }
 
 /**
- * 定位完成后，若该班已勾选则打开现有标记信息窗；
- * 否则临时添加一个仅含该同学的标记并打开其信息窗。
+ * 定位完成后，若该大学已有现有标记则打开其信息窗；
+ * 否则临时创建一个标记并打开其信息窗。
+ * 对于大学类型搜索结果，信息窗显示所有班级所有同学。
  */
 function openOrPinSearchResult(target, point) {
   const existingMarker = activeMarkerByUniversity[target.university];
@@ -472,19 +553,27 @@ function openOrPinSearchResult(target, point) {
     return;
   }
 
-  // 班级未勾选，临时创建该同学的标记
-  const color = CLASS_COLORS[target.classNum];
-  const studentsByClass = {};
-  studentsByClass[target.classNum] = [target.name];
-  const group = {
-    university: target.university,
-    city: target.city || '',
-    classNums: [target.classNum],
-    studentsByClass: studentsByClass,
-    totalStudents: 1
-  };
+  var marker;
+  if (target.type === 'university') {
+    // 大学搜索结果：显示该大学所有班级所有同学
+    var merged = target.classNums.length > 1;
+    var color = merged ? MERGED_MARKER_COLOR : CLASS_COLORS[target.classNums[0]];
+    marker = createMarker(point, target, color, merged);
+  } else {
+    // 学生搜索结果：仅显示该同学
+    var sColor = CLASS_COLORS[target.classNum];
+    var studentsByClass = {};
+    studentsByClass[target.classNum] = [target.name];
+    var group = {
+      university: target.university,
+      city: target.city || '',
+      classNums: [target.classNum],
+      studentsByClass: studentsByClass,
+      totalStudents: 1
+    };
+    marker = createMarker(point, group, sColor, false);
+  }
 
-  const marker = createMarker(point, group, color, false);
   addMapOverlay(marker);
   marker.openInfoWindow(marker.__infoWindow);
   searchPinnedMarker = marker;
@@ -529,14 +618,24 @@ function updateSearchNavInfo() {
   const target = getCurrentSearchResult();
   if (!target) return;
   const navInfo = document.getElementById('searchNavInfo');
+
+  var labelHTML;
+  if (target.type === 'university') {
+    var classStr = target.classNums.map(function (c) { return c + '班'; }).join('·');
+    labelHTML =
+      escapeHTML(target.university)
+      + '（' + classStr + '·共' + target.totalStudents + '人）';
+  } else {
+    labelHTML =
+      escapeHTML(target.name)
+      + '（' + target.classNum + '班&middot;' + escapeHTML(target.university) + '）';
+  }
+
   navInfo.innerHTML =
     '<span class="nav-index">' + (searchResultIndex + 1) + '</span>'
     + '<span class="nav-sep"> / </span>'
     + '<span class="nav-total">' + searchResults.length + '</span>'
-    + '<span class="nav-label">'
-    + escapeHTML(target.name)
-    + '（' + target.classNum + '班&middot;' + escapeHTML(target.university) + '）'
-    + '</span>';
+    + '<span class="nav-label">' + labelHTML + '</span>';
   document.getElementById('searchNavPrev').disabled = searchResultIndex === 0;
   document.getElementById('searchNavNext').disabled = searchResultIndex === searchResults.length - 1;
 }
