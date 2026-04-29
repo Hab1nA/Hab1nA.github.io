@@ -19,6 +19,9 @@ let activeMarkers = [];
 /** 当前显示标记索引（大学名 -> marker），供搜索定位后打开信息窗 */
 let activeMarkerByUniversity = {};
 
+/** 搜索定位时为班级未勾选的同学临时添加的标记（关闭搜索时移除） */
+let searchPinnedMarker = null;
+
 /** 标记渲染版本号，用于忽略过期异步地理编码回调 */
 let markerRenderVersion = 0;
 
@@ -341,6 +344,11 @@ function addMarkerToMap(point, group) {
   addMapOverlay(marker);
   activeMarkers.push(marker);
   activeMarkerByUniversity[group.university] = marker;
+
+  // 若搜索临时标记恰好属于同一大学，则移除它（正式标记已覆盖）
+  if (searchPinnedMarker && searchPinnedMarker.__university === group.university) {
+    clearSearchPinnedMarker();
+  }
 }
 
 /** 构建信息窗口 HTML（使用内联样式，避免被地图默认样式覆盖） */
@@ -456,10 +464,11 @@ function goToSearchResult() {
   const target = getCurrentSearchResult();
   if (!target) return;
   updateSearchNavInfo();
+  clearSearchPinnedMarker();
   const requestId = ++searchNavRequestId;
   if (target.coordinate) {
     map.centerAndZoom(toLngLat(target.coordinate), 13);
-    openMatchedMarkerInfoWindow(target);
+    openOrPinSearchResult(target, toLngLat(target.coordinate));
     return;
   }
   enqueueGeocode(target.university, target.city, function (point) {
@@ -469,8 +478,53 @@ function goToSearchResult() {
       return;
     }
     map.centerAndZoom(point, 13);
-    openMatchedMarkerInfoWindow(target);
+    openOrPinSearchResult(target, point);
   });
+}
+
+/**
+ * 定位完成后，若该班已勾选则打开现有标记信息窗；
+ * 否则临时添加一个仅含该同学的标记并打开其信息窗。
+ */
+function openOrPinSearchResult(target, point) {
+  const existingMarker = activeMarkerByUniversity[target.university];
+  if (existingMarker && existingMarker.__infoWindow && typeof existingMarker.openInfoWindow === 'function') {
+    existingMarker.openInfoWindow(existingMarker.__infoWindow);
+    return;
+  }
+
+  // 班级未勾选，临时创建该同学的标记
+  const color = CLASS_COLORS[target.classNum];
+  const icon = new T.Icon({
+    iconUrl: createPinIcon(color),
+    iconSize: new T.Point(36, 48),
+    iconAnchor: new T.Point(18, 46)
+  });
+  const marker = new T.Marker(point, { icon: icon });
+
+  const studentsByClass = {};
+  studentsByClass[target.classNum] = [target.name];
+  const group = {
+    university: target.university,
+    city: target.city || '',
+    classNums: [target.classNum],
+    studentsByClass: studentsByClass,
+    totalStudents: 1
+  };
+
+  const infoContent = buildInfoWindowHTML(group, color, false);
+  const hoverInfoWindow = new T.InfoWindow(infoContent, { autoPan: false, closeButton: false });
+  const infoWindow = new T.InfoWindow(infoContent, { autoPan: true, closeButton: false });
+
+  marker.__university = group.university;
+  marker.__infoWindow = infoWindow;
+  marker.addEventListener('mouseover', function () { marker.openInfoWindow(hoverInfoWindow); });
+  marker.addEventListener('mouseout',  function () { marker.closeInfoWindow(); });
+  marker.addEventListener('click',     function () { marker.openInfoWindow(infoWindow); });
+
+  addMapOverlay(marker);
+  marker.openInfoWindow(infoWindow);
+  searchPinnedMarker = marker;
 }
 
 /** 返回当前搜索结果条目，越界时返回 null */
@@ -485,12 +539,21 @@ function showSearchNav() {
   document.getElementById('searchNav').classList.add('show');
 }
 
-/** 隐藏并清空搜索结果导航条 */
+/** 隐藏并清空搜索结果导航条，同时移除临时标记 */
 function hideSearchNav() {
   searchResults = [];
   searchResultIndex = 0;
   searchNavRequestId++;  // 使任何仍在飞行中的地理编码回调失效
+  clearSearchPinnedMarker();
   document.getElementById('searchNav').classList.remove('show');
+}
+
+/** 移除搜索定位时临时添加的标记 */
+function clearSearchPinnedMarker() {
+  if (searchPinnedMarker) {
+    removeMapOverlay(searchPinnedMarker);
+    searchPinnedMarker = null;
+  }
 }
 
 /** 刷新导航条的文字与按钮状态 */
@@ -508,13 +571,6 @@ function updateSearchNavInfo() {
     + '</span>';
   document.getElementById('searchNavPrev').disabled = searchResultIndex === 0;
   document.getElementById('searchNavNext').disabled = searchResultIndex === searchResults.length - 1;
-}
-
-function openMatchedMarkerInfoWindow(target) {
-  const marker = activeMarkerByUniversity[target.university];
-  if (marker && marker.__infoWindow && typeof marker.openInfoWindow === 'function') {
-    marker.openInfoWindow(marker.__infoWindow);
-  }
 }
 
 /* ─── 模态框 ─────────────────────────────────────────────── */
