@@ -76,12 +76,12 @@ const class2Data = [
   },
   {
     "name": "张家宁",
-    "university": "浙江大学医学院",
+    "university": "浙江大学（医学院）",
     "city": "杭州"
   },
   {
     "name": "李彦希",
-    "university": "厦门大学马来西亚校区",
+    "university": "厦门大学（马来西亚校区）",
     "city": "马来西亚",
     "latitude": 2.8327035,
     "longitude": 101.7005764

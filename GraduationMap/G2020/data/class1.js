@@ -11,7 +11,7 @@ const class1Data = [
   },
   {
     "name": "朱映羲",
-    "university": "北京大学医学部",
+    "university": "北京大学（医学部）",
     "city": "北京"
   },
   {
