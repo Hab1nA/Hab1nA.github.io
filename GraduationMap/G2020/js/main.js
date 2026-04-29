@@ -22,6 +22,9 @@ let activeMarkerByUniversity = {};
 /** 搜索定位时为班级未勾选的同学临时添加的标记（关闭搜索时移除） */
 let searchPinnedMarker = null;
 
+/** 搜索时被临时替换了信息窗的已有标记（关闭搜索时恢复其原始信息窗） */
+let patchedExistingMarker = null;
+
 /** 标记渲染版本号，用于忽略过期异步地理编码回调 */
 let markerRenderVersion = 0;
 
@@ -549,8 +552,100 @@ function goToSearchResult() {
 function openOrPinSearchResult(target, point) {
   const existingMarker = activeMarkerByUniversity[target.university];
   if (existingMarker && existingMarker.__infoWindow && typeof existingMarker.openInfoWindow === 'function') {
-    existingMarker.openInfoWindow(existingMarker.__infoWindow);
-    return;
+    // 检查搜索结果中的班级是否已被已有标记完全覆盖
+    var selectedClasses = getSelectedClasses();
+    var allClassesCovered = true;
+    var searchClassNums;
+    if (target.type === 'university') {
+      searchClassNums = target.classNums;
+    } else {
+      searchClassNums = [target.classNum];
+    }
+    for (var i = 0; i < searchClassNums.length; i++) {
+      if (selectedClasses.indexOf(searchClassNums[i]) === -1) {
+        allClassesCovered = false;
+        break;
+      }
+    }
+
+    if (allClassesCovered) {
+      // 搜索结果班级全部被当前勾选覆盖，直接用已有信息窗
+      existingMarker.openInfoWindow(existingMarker.__infoWindow);
+      return;
+    }
+
+    // 搜索结果包含未勾选班级 → 合并勾选班级数据与搜索结果数据，重建信息窗
+    var selectedGroups = groupSelectedByUniversity(selectedClasses);
+    var existingGroup = null;
+    for (var j = 0; j < selectedGroups.length; j++) {
+      if (selectedGroups[j].university === target.university) {
+        existingGroup = selectedGroups[j];
+        break;
+      }
+    }
+
+    if (existingGroup) {
+      // 保存原始信息窗用于后续恢复
+      patchedExistingMarker = {
+        marker: existingMarker,
+        origInfoWindow: existingMarker.__infoWindow
+      };
+
+      // 合并搜索结果中的班级数据到 existingGroup
+      var mergedGroup = {
+        university: existingGroup.university,
+        city: existingGroup.city,
+        classNums: existingGroup.classNums.slice(),
+        studentsByClass: {},
+        totalStudents: existingGroup.totalStudents
+      };
+
+      // 复制已有班级数据
+      for (var cNum in existingGroup.studentsByClass) {
+        if (Object.prototype.hasOwnProperty.call(existingGroup.studentsByClass, cNum)) {
+          mergedGroup.studentsByClass[cNum] = existingGroup.studentsByClass[cNum].slice();
+        }
+      }
+
+      // 合并搜索结果的班级数据
+      if (target.type === 'university') {
+        for (var ci = 0; ci < target.classNums.length; ci++) {
+          var cn = target.classNums[ci];
+          if (!mergedGroup.studentsByClass[cn]) {
+            mergedGroup.studentsByClass[cn] = [];
+          }
+          var targetStudents = target.studentsByClass[cn] || [];
+          for (var si = 0; si < targetStudents.length; si++) {
+            if (mergedGroup.studentsByClass[cn].indexOf(targetStudents[si]) === -1) {
+              mergedGroup.studentsByClass[cn].push(targetStudents[si]);
+              mergedGroup.totalStudents++;
+            }
+          }
+        }
+      } else {
+        // 学生搜索结果
+        var scn = target.classNum;
+        if (!mergedGroup.studentsByClass[scn]) {
+          mergedGroup.studentsByClass[scn] = [];
+        }
+        if (mergedGroup.studentsByClass[scn].indexOf(target.name) === -1) {
+          mergedGroup.studentsByClass[scn].push(target.name);
+          mergedGroup.totalStudents++;
+        }
+      }
+
+      // 重新排序 classNums
+      mergedGroup.classNums = Object.keys(mergedGroup.studentsByClass).map(Number).sort(function (a, b) { return a - b; });
+
+      var mergedColor = mergedGroup.classNums.length > 1 ? MERGED_MARKER_COLOR : CLASS_COLORS[mergedGroup.classNums[0]];
+      var mergedInfoContent = buildInfoWindowHTML(mergedGroup, mergedColor, mergedGroup.classNums.length > 1);
+      var patchedInfoWindow = new T.InfoWindow(mergedInfoContent, { autoPan: true, closeButton: false });
+
+      // 替换信息窗
+      existingMarker.__infoWindow = patchedInfoWindow;
+      existingMarker.openInfoWindow(patchedInfoWindow);
+      return;
+    }
   }
 
   var marker;
@@ -605,11 +700,17 @@ function hideSearchNav(clearPinnedMarker = true) {
   document.getElementById('searchNav').classList.remove('show');
 }
 
-/** 移除搜索定位时临时添加的标记 */
+/** 移除搜索定位时临时添加的标记，并恢复被临时替换信息窗的已有标记 */
 function clearSearchPinnedMarker() {
   if (searchPinnedMarker) {
     removeMapOverlay(searchPinnedMarker);
     searchPinnedMarker = null;
+  }
+
+  // 恢复被搜索临时替换了信息窗的已有标记
+  if (patchedExistingMarker) {
+    patchedExistingMarker.marker.__infoWindow = patchedExistingMarker.origInfoWindow;
+    patchedExistingMarker = null;
   }
 }
 
