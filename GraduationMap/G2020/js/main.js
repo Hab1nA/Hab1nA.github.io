@@ -1032,7 +1032,7 @@ function positionMissingPanel() {
   // 班级筛选面板顶部在视口中的 y 坐标 = 视口高度 - bottom - height
   var classPanelTop = window.innerHeight - classPanelBottom - classPanelHeight;
 
-  // "数据缺失"面板底部 = 班级筛选面板顶部 + 20px（即在其上方 16px）
+  // "数据缺失"面板底部 = 班级筛选面板顶部 + 16px（即在其上方 16px）
   var missingBottom = window.innerHeight - classPanelTop + 16;
 
   missingPanel.style.bottom = missingBottom + 'px';
