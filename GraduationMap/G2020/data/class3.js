@@ -205,4 +205,8 @@ const class3Data = [
 
 const class3MissingData = [
   // { "name": "同学姓名" }
+  { "name": "谢铠我啊" },
+  { "name": "谢铠强强强强强强强强吧" },
+  { "name": "谢铠啊是" },
+  { "name": "谢去" }
 ];

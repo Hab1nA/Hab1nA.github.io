@@ -341,7 +341,7 @@ body {
   border: 3px solid #e2e8f0;
   border-top-color: var(--brand);
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: spin 0.5s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-text { font-size: 14px; color: #475569; font-weight: 500; }
@@ -438,7 +438,7 @@ body {
 .missing-panel {
   position: fixed;
   right: 22px;
-  bottom: calc(36px + 260px + 4px); /* class-panel bottom + 实际高度 + 间距 */
+  bottom: calc(38px + 260px); /* class-panel bottom + 实际高度 + 间距 */
   background: var(--panel-bg);
   border-radius: var(--radius);
   box-shadow: var(--panel-shadow);
