@@ -895,7 +895,8 @@ function buildStatsContent() {
     totalAll += data.length + missingData.length;
     data.forEach(function (s) {
       cityCounts[s.city] = (cityCounts[s.city] || 0) + 1;
-      uniCounts[s.university] = (uniCounts[s.university] || 0) + 1;
+      var baseName = getUniversityBaseName(s.university);
+      uniCounts[baseName] = (uniCounts[baseName] || 0) + 1;
     });
   }
 
@@ -925,12 +926,16 @@ function buildStatsContent() {
 
   const uniBarsHTML = topUnis.map(function (entry) {
     const uniName = entry[0];
-    const name = uniName.length > UNI_LABEL_MAX_LEN ? uniName.slice(0, UNI_LABEL_MAX_LEN) + '…' : uniName;
-    const safeName = escapeHTML(name);
     const safeUniName = escapeHTML(uniName);
+    var labelHTML;
+    if (uniName.length > 6) {
+      labelHTML = '<span class="bar-label" style="overflow:visible;"><marquee behavior="scroll" direction="left" scrollamount="2" loop="-1" style="width:88px;" title="' + safeUniName + '">' + safeUniName + '</marquee></span>';
+    } else {
+      labelHTML = '<span class="bar-label" title="' + safeUniName + '">' + safeUniName + '</span>';
+    }
     const pct  = (entry[1] / maxUni * 100).toFixed(1);
     return '<div class="bar-row">'
-      + '<span class="bar-label" title="' + safeUniName + '">' + safeName + '</span>'
+      + labelHTML
       + '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:#10b981;"></div></div>'
       + '<span class="bar-count">' + entry[1] + '人</span>'
       + '</div>';
@@ -1035,12 +1040,37 @@ function showToast(msg) {
   }, 3000);
 }
 
+/**
+ * 提取大学"本名"用于统计合并。
+ * 一般情况：去除括号及其内容（中文全角括号和英文半角括号）。
+ * 特例（不同校区实为不同大学）：中国地质大学（武汉/北京）、
+ *   中国石油大学（北京/华东）、中国矿业大学（北京）
+ *   这些保留完整原名，不做去除。
+ */
+function getUniversityBaseName(university) {
+  if (!university) return '';
+  // 特例白名单：这些括号内后缀标识了不同的独立大学
+  var specials = [
+    '中国地质大学（武汉）',
+    '中国地质大学（北京）',
+    '中国石油大学（北京）',
+    '中国石油大学（华东）',
+    '中国矿业大学（北京）',
+    '中国矿业大学'
+  ];
+  for (var i = 0; i < specials.length; i++) {
+    if (university === specials[i]) return university;
+  }
+  // 通用：去除中文全角括号（）及其内容，以及英文半角括号 () 及其内容
+  return university.replace(/[（(][^）)]*[）)]/g, '').trim();
+}
+
 function escapeHTML(text) {
   return String(text == null ? '' : text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+    .replace(/&/g, '&')
+    .replace(/</g, '<')
+    .replace(/>/g, '>')
+    .replace(/"/g, '"')
     .replace(/'/g, '&#39;');
 }
 
