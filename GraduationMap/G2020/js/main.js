@@ -610,10 +610,11 @@ function openOrPinSearchResult(target, point) {
     }
 
     if (existingGroup) {
-      // 保存原始信息窗用于后续恢复
+      // 保存原始信息窗与图标用于后续恢复
       patchedExistingMarker = {
         marker: existingMarker,
-        origInfoWindow: existingMarker.__infoWindow
+        origInfoWindow: existingMarker.__infoWindow,
+        origIcon: existingMarker.getIcon()
       };
 
       // 合并搜索结果中的班级数据到 existingGroup
@@ -665,6 +666,16 @@ function openOrPinSearchResult(target, point) {
       var mergedColor = mergedGroup.classNums.length > 1 ? MERGED_MARKER_COLOR : CLASS_COLORS[mergedGroup.classNums[0]];
       var mergedInfoContent = buildInfoWindowHTML(mergedGroup, mergedColor, mergedGroup.classNums.length > 1);
       var patchedInfoWindow = new T.InfoWindow(mergedInfoContent, { autoPan: true, closeButton: false });
+
+      // 若合并后为多班，替换为灰色图标
+      if (mergedGroup.classNums.length > 1) {
+        var grayIcon = new T.Icon({
+          iconUrl: createPinIcon(MERGED_MARKER_COLOR),
+          iconSize: new T.Point(36, 48),
+          iconAnchor: new T.Point(18, 46)
+        });
+        existingMarker.setIcon(grayIcon);
+      }
 
       // 替换信息窗
       existingMarker.__infoWindow = patchedInfoWindow;
@@ -738,6 +749,7 @@ function clearSearchPinnedMarker() {
   if (patchedExistingMarker) {
     patchedExistingMarker.marker.closeInfoWindow();
     patchedExistingMarker.marker.__infoWindow = patchedExistingMarker.origInfoWindow;
+    patchedExistingMarker.marker.setIcon(patchedExistingMarker.origIcon);
     patchedExistingMarker = null;
   }
 
