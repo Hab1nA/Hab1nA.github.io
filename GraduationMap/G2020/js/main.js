@@ -19,7 +19,7 @@ let activeMarkers = [];
 /** 当前显示标记索引（大学名 -> marker），供搜索定位后打开信息窗 */
 let activeMarkerByUniversity = {};
 
-/** 搜索定位时为班级未勾选的同学/大学临时添加的标记（关闭搜索时移除） */
+/** 搜索定位时为班级未勾选的同学临时添加的标记（关闭搜索时移除） */
 let searchPinnedMarker = null;
 
 /** 标记渲染版本号，用于忽略过期异步地理编码回调 */
@@ -189,7 +189,7 @@ function setupMapEventListeners() {
     });
   }
 
-  // 搜索框
+  // 搜索框（需要 T.LocalSearch，依赖地图对象）
   document.getElementById('searchBtn').addEventListener('click', performSearch);
   document.getElementById('searchInput').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') performSearch();
@@ -394,25 +394,37 @@ function performSearch() {
   // 新搜索开始时清除旧导航条
   hideSearchNav();
 
-  // 1. 优先支持同学姓名检索
+  // 优先支持同学姓名检索
   const studentMatches = findStudentMatchesByName(query);
   if (studentMatches.length > 0) {
     focusOnStudentMatch(query, studentMatches);
     return;
   }
 
-  // 2. 按大学名称检索
-  const uniMatches = findStudentMatchesByUniversity(query);
-  if (uniMatches.length > 0) {
-    focusOnUniversityMatch(query, uniMatches);
-    return;
-  }
-
-  // 3. 本地数据库中无对应结果
-  showToast('未找到"' + query + '"，请尝试其他关键词');
+  const localSearch = new T.LocalSearch(map, {
+    pageCapacity: 10,
+    onSearchComplete: function (result) {
+      // getResultType 在不同示例中返回值类型不完全一致，这里统一转数字比较
+      if (result && Number(result.getResultType()) === TMAP_SEARCH_RESULT_POI) {
+        const pois = result.getPois();
+        if (pois && pois.length > 0 && typeof pois[0].lonlat === 'string') {
+          const lnglatArr = pois[0].lonlat.split(',');
+          if (lnglatArr.length === 2) {
+            const lng = parseFloat(lnglatArr[0]);
+            const lat = parseFloat(lnglatArr[1]);
+            if (Number.isFinite(lng) && Number.isFinite(lat)) {
+              map.centerAndZoom(new T.LngLat(lng, lat), 14);
+              return;
+            }
+          }
+        }
+      }
+      showToast('未找到"' + query + '"，请尝试其他关键词');
+    }
+  });
+  localSearch.search(query);
 }
 
-/** 按同学姓名模糊搜索本地数据 */
 function findStudentMatchesByName(query) {
   const q = query.toLowerCase();
   const matches = [];
@@ -432,44 +444,6 @@ function findStudentMatchesByName(query) {
   return matches;
 }
 
-/** 按大学名称模糊搜索本地数据，按大学聚合返回 */
-function findStudentMatchesByUniversity(query) {
-  const q = query.toLowerCase();
-  const uniMap = {};
-  for (let i = 1; i <= 4; i++) {
-    (ALL_CLASS_DATA[i] || []).forEach(function (student) {
-      if ((student.university || '').toLowerCase().indexOf(q) !== -1) {
-        if (!uniMap[student.university]) {
-          uniMap[student.university] = {
-            __isUniversityResult: true,
-            name: student.university,
-            university: student.university,
-            city: student.city || '',
-            coordinate: null,
-            classNums: [],
-            studentsByClass: {},
-            totalStudents: 0
-          };
-        }
-        const match = uniMap[student.university];
-        if (!match.city && student.city) match.city = student.city;
-        const coord = parseStudentCoordinate(student);
-        if (coord && !match.coordinate) match.coordinate = coord;
-        if (!match.studentsByClass[i]) {
-          match.studentsByClass[i] = [];
-          match.classNums.push(i);
-        }
-        match.studentsByClass[i].push(student.name);
-        match.totalStudents++;
-      }
-    });
-  }
-  return Object.values(uniMap).map(function (m) {
-    m.classNums.sort(function (a, b) { return a - b; });
-    return m;
-  });
-}
-
 function focusOnStudentMatch(query, matches) {
   // 记录所有结果，优先选精确匹配
   searchResults = matches.slice();
@@ -483,23 +457,6 @@ function focusOnStudentMatch(query, matches) {
   } else {
     hideSearchNav(false);
     showToast('已定位：' + matches[0].name + '（' + matches[0].classNum + '班 · ' + matches[0].university + '）');
-  }
-}
-
-function focusOnUniversityMatch(query, matches) {
-  // 记录所有结果，优先选精确匹配
-  searchResults = matches.slice();
-  const exactIdx = matches.findIndex(function (m) { return m.university === query; });
-  searchResultIndex = exactIdx >= 0 ? exactIdx : 0;
-
-  goToSearchResult();
-
-  if (matches.length > 1) {
-    showSearchNav();
-  } else {
-    hideSearchNav(false);
-    const classStr = matches[0].classNums.map(function (n) { return n + '班'; }).join('·');
-    showToast('已定位：' + matches[0].university + '（' + classStr + '）');
   }
 }
 
@@ -518,11 +475,7 @@ function goToSearchResult() {
   enqueueGeocode(target.university, target.city, function (point) {
     if (requestId !== searchNavRequestId) return; // 导航已切换，丢弃过期回调
     if (!point) {
-      if (target.__isUniversityResult) {
-        showToast('找到大学"' + target.university + '"，但未能定位其位置');
-      } else {
-        showToast('找到同学"' + target.name + '"，但未能定位其大学');
-      }
+      showToast('找到同学"' + target.name + '"，但未能定位其大学');
       return;
     }
     map.centerAndZoom(point, 13);
@@ -532,7 +485,7 @@ function goToSearchResult() {
 
 /**
  * 定位完成后，若该班已勾选则打开现有标记信息窗；
- * 否则临时添加一个仅含该同学/该大学的标记并打开其信息窗。
+ * 否则临时添加一个仅含该同学的标记并打开其信息窗。
  */
 function openOrPinSearchResult(target, point) {
   const existingMarker = activeMarkerByUniversity[target.university];
@@ -541,25 +494,7 @@ function openOrPinSearchResult(target, point) {
     return;
   }
 
-  // 大学搜索结果：使用预聚合的多班数据构建标记
-  if (target.__isUniversityResult) {
-    const merged = target.classNums.length > 1;
-    const color = merged ? MERGED_MARKER_COLOR : CLASS_COLORS[target.classNums[0]];
-    const group = {
-      university: target.university,
-      city: target.city || '',
-      classNums: target.classNums,
-      studentsByClass: target.studentsByClass,
-      totalStudents: target.totalStudents
-    };
-    const marker = createMarker(point, group, color, merged);
-    addMapOverlay(marker);
-    marker.openInfoWindow(marker.__infoWindow);
-    searchPinnedMarker = marker;
-    return;
-  }
-
-  // 同学姓名搜索结果：班级未勾选时，临时创建该同学的标记
+  // 班级未勾选，临时创建该同学的标记
   const color = CLASS_COLORS[target.classNum];
   const studentsByClass = {};
   studentsByClass[target.classNum] = [target.name];
@@ -616,19 +551,14 @@ function updateSearchNavInfo() {
   const target = getCurrentSearchResult();
   if (!target) return;
   const navInfo = document.getElementById('searchNavInfo');
-  var navLabel;
-  if (target.__isUniversityResult) {
-    navLabel = escapeHTML(target.university)
-      + '（' + target.classNums.map(function (n) { return n + '班'; }).join('·') + '）';
-  } else {
-    navLabel = escapeHTML(target.name)
-      + '（' + target.classNum + '班&middot;' + escapeHTML(target.university) + '）';
-  }
   navInfo.innerHTML =
     '<span class="nav-index">' + (searchResultIndex + 1) + '</span>'
     + '<span class="nav-sep"> / </span>'
     + '<span class="nav-total">' + searchResults.length + '</span>'
-    + '<span class="nav-label">' + navLabel + '</span>';
+    + '<span class="nav-label">'
+    + escapeHTML(target.name)
+    + '（' + target.classNum + '班&middot;' + escapeHTML(target.university) + '）'
+    + '</span>';
   document.getElementById('searchNavPrev').disabled = searchResultIndex === 0;
   document.getElementById('searchNavNext').disabled = searchResultIndex === searchResults.length - 1;
 }
@@ -776,21 +706,6 @@ function removeMapOverlay(overlay) {
   } else if (typeof map.removeOverlay === 'function') {
     map.removeOverlay(overlay);
   }
-}
-
-/** 底部短暂提示条 */
-function showToast(msg) {
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(function () {
-    toast.classList.remove('show');
-  }, 3000);
-}
-
-function escapeHTML(text) {
-  return String(text == null ? "" : text)replace(/&/g, '&amp;')replace(/</g, '&lt;')replace(/>/g, '&gt;')replace(/"/g, '&quot;')replace(/'/g, '&#39;');
 }
 
 /** 底部短暂提示条 */
