@@ -215,3 +215,7 @@ const class4Data = [
     "city": "珠海"
   }
 ];
+
+const class4MissingData = [
+  // { "name": "同学姓名" }
+];

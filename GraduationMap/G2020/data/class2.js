@@ -169,3 +169,7 @@ const class2Data = [
     "city": "上海"
   }
 ];
+
+const class2MissingData = [
+  // { "name": "同学姓名" }
+];
