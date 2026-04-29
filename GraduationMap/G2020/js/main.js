@@ -539,12 +539,17 @@ function showSearchNav() {
   document.getElementById('searchNav').classList.add('show');
 }
 
-/** 隐藏并清空搜索结果导航条，同时移除临时标记 */
-function hideSearchNav() {
+/**
+ * 隐藏并清空搜索结果导航条。
+ * 默认会同时移除搜索定位时的临时标记；传入 false 时仅隐藏/重置导航，不清除临时标记。
+ */
+function hideSearchNav(clearPinnedMarker = true) {
   searchResults = [];
   searchResultIndex = 0;
   searchNavRequestId++;  // 使任何仍在飞行中的地理编码回调失效
-  clearSearchPinnedMarker();
+  if (clearPinnedMarker) {
+    clearSearchPinnedMarker();
+  }
   document.getElementById('searchNav').classList.remove('show');
 }
 
