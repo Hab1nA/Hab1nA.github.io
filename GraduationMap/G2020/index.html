@@ -53,16 +53,18 @@
   <div id="map-container"></div>
 
    <!-- ══════════════════════════════════════
+        右下角数据缺失面板（独立于班级筛选）
+        ══════════════════════════════════════ -->
+   <div class="missing-panel hidden" id="missingDataToggle">
+     <span class="missing-icon">⚠️</span>
+     <span class="missing-label">数据缺失</span>
+     <span class="missing-count" id="missingCount">0人</span>
+   </div>
+
+   <!-- ══════════════════════════════════════
         右下角班级筛选面板
         ══════════════════════════════════════ -->
    <div class="class-panel" id="classPanel">
-     <!-- 数据缺失栏目 -->
-     <div class="missing-data-toggle hidden" id="missingDataToggle">
-       <span class="missing-icon">⚠️</span>
-       <span class="missing-label">数据缺失</span>
-       <span class="missing-count" id="missingCount">0人</span>
-     </div>
-
      <div class="panel-header">
        <span class="panel-icon">📚</span>
        <span class="panel-title">班级筛选</span>

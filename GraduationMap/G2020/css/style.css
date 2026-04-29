@@ -434,29 +434,37 @@ body {
 .about-section a { color: var(--brand); text-decoration: none; }
 .about-section a:hover { text-decoration: underline; }
 
-/* ── 数据缺失 点击框 ── */
-.missing-data-toggle {
+/* ── 数据缺失面板（独立于班级筛选面板，位于其上方） ── */
+.missing-panel {
+  position: fixed;
+  right: 22px;
+  bottom: calc(36px + 260px + 4px); /* class-panel bottom + 实际高度 + 间距 */
+  background: var(--panel-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--panel-shadow);
+  min-width: 186px;
+  z-index: 900;
+  border: 2.5px solid #FFD700;
+  overflow: hidden;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 0 16px 6px 16px;
-  padding: 10px 14px;
-  border: 2px solid #FFD700;
-  border-radius: 10px;
-  background: rgba(255, 215, 0, 0.08);
+  padding: 11px 16px;
   cursor: pointer;
   user-select: none;
   transition: background var(--ease), box-shadow var(--ease);
 }
-.missing-data-toggle:hover {
-  background: rgba(255, 215, 0, 0.16);
-  box-shadow: 0 0 12px rgba(255, 215, 0, 0.25);
+.missing-panel:hover {
+  background: rgba(255, 215, 0, 0.12);
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.30);
 }
-.missing-data-toggle.hidden {
+.missing-panel.hidden {
   display: none;
 }
 .missing-icon { font-size: 15px; }
-.missing-label { font-size: 14px; color: var(--text); font-weight: 500; flex: 1; }
+.missing-label { font-size: 13px; color: var(--text); font-weight: 600; letter-spacing: 0.4px; flex: 1; }
 .missing-count {
   font-size: 11px;
   color: #b8860b;
