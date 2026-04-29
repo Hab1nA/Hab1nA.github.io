@@ -164,6 +164,9 @@ window.onTMapCallback = function () {
   map.setMinZoom(4);
   map.setMaxZoom(18);
 
+  // 切换为卫星图像
+  map.setMapType(T.MapType.SATELLITE);
+
   // 缩放控件（位于左下）
   const zoomControl = new T.Control.Zoom();
   zoomControl.setPosition(T_ANCHOR_BOTTOM_LEFT);
