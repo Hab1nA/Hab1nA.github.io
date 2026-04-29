@@ -107,7 +107,7 @@ function processNextGeocode() {
     return;
   }
 
-  const keyword = (item.city || '') + item.university;
+  const keyword = (item.city ? item.city + ' ' : '') + item.university;
   geocoder.getPoint(keyword, function (result) {
     const point = parseGeocodeResult(result);
     geoCache[item.university] = point; // null 时表示未找到，也缓存，避免重复请求
