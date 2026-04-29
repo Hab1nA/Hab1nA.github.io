@@ -40,6 +40,9 @@ const MERGED_MARKER_COLOR = '#9ca3af'; // 多班同校合并标记（灰）
 /** 全班数据引用（在 onTMapCallback 中绑定） */
 const ALL_CLASS_DATA = {};
 
+/** 各班缺失数据引用 */
+const ALL_MISSING_DATA = {};
+
 /* ─── 地理编码队列 ──────────────────────────────────────── */
 const geocodeQueue = [];
 let geocodingActive = false;
@@ -118,8 +121,17 @@ document.addEventListener('DOMContentLoaded', function () {
   ALL_CLASS_DATA[3] = typeof class3Data !== 'undefined' ? class3Data : [];
   ALL_CLASS_DATA[4] = typeof class4Data !== 'undefined' ? class4Data : [];
 
+  // 绑定缺失数据
+  ALL_MISSING_DATA[1] = typeof class1MissingData !== 'undefined' ? class1MissingData : [];
+  ALL_MISSING_DATA[2] = typeof class2MissingData !== 'undefined' ? class2MissingData : [];
+  ALL_MISSING_DATA[3] = typeof class3MissingData !== 'undefined' ? class3MissingData : [];
+  ALL_MISSING_DATA[4] = typeof class4MissingData !== 'undefined' ? class4MissingData : [];
+
   // 人数徽标
   updateCountBadges();
+
+  // 初始化"数据缺失"面板相对"班级筛选"面板的位置
+  positionMissingPanel();
 
   // 关于 / 数据统计按钮（不依赖地图）
   document.getElementById('aboutBtn').addEventListener('click', function () {
@@ -128,6 +140,14 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('statsBtn').addEventListener('click', function () {
     buildStatsContent();
     openModal('statsModal');
+  });
+
+  // 数据缺失栏目点击
+  document.getElementById('missingDataToggle').addEventListener('click', function () {
+    var selected = getSelectedClasses();
+    if (selected.length === 0) return;
+    buildMissingDataContent(selected);
+    openModal('missingDataModal');
   });
 
   // 关闭按钮
@@ -152,6 +172,11 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
   });
+
+  // 窗口大小变化时重新计算"数据缺失"面板位置
+  window.addEventListener('resize', function () {
+    positionMissingPanel();
+  });
 });
 
 /* ─── 地图初始化（天地图 API 回调） ──────────────────────── */
@@ -163,8 +188,6 @@ window.onTMapCallback = function () {
   map.enableScrollWheelZoom();
   map.setMinZoom(4);
   map.setMaxZoom(18);
-
-  // 缩放控件（位于左下）
 
   // 比例尺（位于左下）
   const scaleControl = new T.Control.Scale();
@@ -180,11 +203,12 @@ window.onTMapCallback = function () {
 
 /* ─── 地图相关 UI 初始化（地图 API 就绪后调用） ──────────── */
 function setupMapEventListeners() {
-  // 班级复选框 → 显示/隐藏标记
+  // 班级复选框 → 显示/隐藏标记 + 更新数据缺失栏目
   for (let i = 1; i <= 4; i++) {
     document.getElementById('class' + i).addEventListener('change', function () {
       renderSelectedMarkers();
       updateTotalCount();
+      updateMissingDataToggle();
     });
   }
 
@@ -689,7 +713,8 @@ function showSearchNav() {
  * 隐藏并清空搜索结果导航条。
  * 默认会同时移除搜索定位时的临时标记；传入 false 时仅隐藏/重置导航，不清除临时标记。
  */
-function hideSearchNav(clearPinnedMarker = true) {
+function hideSearchNav(clearPinnedMarker) {
+  if (clearPinnedMarker === undefined) clearPinnedMarker = true;
   searchResults = [];
   searchResultIndex = 0;
   searchNavRequestId++;  // 使任何仍在飞行中的地理编码回调失效
@@ -747,6 +772,91 @@ function openModal(id) {
 
 function closeModal(id) {
   document.getElementById(id).classList.remove('show');
+}
+
+/* ─── 数据缺失 ───────────────────────────────────────────── */
+
+/**
+ * 根据当前勾选的班级，更新"数据缺失"栏目的显示/隐藏和人数。
+ * 若无任何班级被勾选，则隐藏；否则显示并统计缺失总人数。
+ */
+function updateMissingDataToggle() {
+  var selected = getSelectedClasses();
+  var toggle = document.getElementById('missingDataToggle');
+  var countEl = document.getElementById('missingCount');
+
+  if (selected.length === 0) {
+    toggle.classList.add('hidden');
+    return;
+  }
+
+  var totalMissing = 0;
+  for (var i = 0; i < selected.length; i++) {
+    var classNum = selected[i];
+    var missingList = ALL_MISSING_DATA[classNum] || [];
+    totalMissing += missingList.length;
+  }
+
+  if (totalMissing === 0) {
+    toggle.classList.add('hidden');
+    return;
+  }
+
+  countEl.textContent = totalMissing + '人';
+  toggle.classList.remove('hidden');
+}
+
+/**
+ * 构建"数据缺失"模态框内容。
+ * @param {number[]} selectedClasses 当前勾选的班级编号数组
+ */
+function buildMissingDataContent(selectedClasses) {
+  var contentEl = document.getElementById('missingDataContent');
+  if (selectedClasses.length === 0) {
+    contentEl.innerHTML = '<div class="missing-data-empty">请先在右下角勾选班级</div>';
+    return;
+  }
+
+  var sectionsHTML = '';
+  var totalMissing = 0;
+
+  for (var i = 0; i < selectedClasses.length; i++) {
+    var classNum = selectedClasses[i];
+    var classColor = CLASS_COLORS[classNum];
+    var missingList = ALL_MISSING_DATA[classNum] || [];
+
+    totalMissing += missingList.length;
+
+    if (missingList.length === 0) {
+      sectionsHTML +=
+        '<div class="missing-data-section">'
+        + '<span class="missing-data-class-title">'
+        + '<span class="missing-data-class-dot" style="background:' + classColor + ';"></span>'
+        + classNum + '班 · 共0人'
+        + '</span>'
+        + '<p style="font-size:13px;color:#94a3b8;padding-left:8px;">该班暂无缺失数据 ✨</p>'
+        + '</div>';
+    } else {
+      var nameItems = missingList.map(function (item) {
+        return '<li>' + escapeHTML(item.name || '') + '</li>';
+      }).join('');
+
+      sectionsHTML +=
+        '<div class="missing-data-section">'
+        + '<span class="missing-data-class-title">'
+        + '<span class="missing-data-class-dot" style="background:' + classColor + ';"></span>'
+        + classNum + '班 · 共' + missingList.length + '人'
+        + '</span>'
+        + '<ul class="missing-data-list">' + nameItems + '</ul>'
+        + '</div>';
+    }
+  }
+
+  var summaryHTML = '<p style="text-align:center;font-size:13px;color:#64748b;margin-bottom:20px;">'
+    + '当前已勾选 <strong>' + selectedClasses.length + '</strong> 个班级，'
+    + '共 <strong style="color:#b8860b;">' + totalMissing + '</strong> 人缺少去向信息</p>';
+
+  contentEl.innerHTML = summaryHTML + sectionsHTML;
 }
 
 /* ─── 数据统计 ───────────────────────────────────────────── */
@@ -902,5 +1012,28 @@ function escapeHTML(text) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '\u0027');
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * 将"数据缺失"面板定位在"班级筛选"面板上方固定 20px 处。
+ * 通过计算 classPanel 的 top 值（视口高度 - bottom - height）来获得班级筛选面板顶部位置，
+ * 然后将 missingPanel 的底部放在 classPanel 顶部 + 20px 的位置。
+ */
+function positionMissingPanel() {
+  var missingPanel = document.getElementById('missingDataToggle');
+  var classPanel = document.getElementById('classPanel');
+  if (!missingPanel || !classPanel) return;
+
+  var classPanelStyle = window.getComputedStyle(classPanel);
+  var classPanelHeight = classPanel.offsetHeight;
+  var classPanelBottom = parseFloat(classPanelStyle.bottom) || 36;
+
+  // 班级筛选面板顶部在视口中的 y 坐标 = 视口高度 - bottom - height
+  var classPanelTop = window.innerHeight - classPanelBottom - classPanelHeight;
+
+  // "数据缺失"面板底部 = 班级筛选面板顶部 + 20px（即在其上方 16px）
+  var missingBottom = window.innerHeight - classPanelTop + 16;
+
+  missingPanel.style.bottom = missingBottom + 'px';
 }

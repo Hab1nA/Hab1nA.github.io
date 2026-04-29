@@ -319,8 +319,7 @@ body {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(5px);
+  background: rgba(0, 0, 0, 0.45);
   z-index: 2000;
   align-items: center;
   justify-content: center;
@@ -341,7 +340,8 @@ body {
   border: 3px solid #e2e8f0;
   border-top-color: var(--brand);
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  will-change: transform;
+  animation: spin 0.5s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-text { font-size: 14px; color: #475569; font-weight: 500; }
@@ -433,6 +433,90 @@ body {
 }
 .about-section a { color: var(--brand); text-decoration: none; }
 .about-section a:hover { text-decoration: underline; }
+
+/* ── 数据缺失面板（独立于班级筛选面板，位于其上方） ── */
+.missing-panel {
+  position: fixed;
+  right: 22px;
+  /* bottom 由 JS 动态计算：班级筛选面板顶部 + 20px 间距 */
+  background: var(--panel-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--panel-shadow);
+  min-width: 186px;
+  z-index: 900;
+  border: 2.5px solid #FFD700;
+  overflow: hidden;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--ease), box-shadow var(--ease);
+}
+.missing-panel:hover {
+  background: rgba(255, 255, 255, 0.60);
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.30);
+}
+.missing-panel.hidden {
+  display: none;
+}
+.missing-icon { font-size: 15px; }
+.missing-label { font-size: 13px; color: var(--text); font-weight: 600; letter-spacing: 0.4px; flex: 1; }
+.missing-count {
+  font-size: 11px;
+  color: #b8860b;
+  background: rgba(255, 215, 0, 0.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* ── 数据缺失 modal 内容 ── */
+.missing-data-section {
+  margin-bottom: 20px;
+}
+.missing-data-section:last-child { margin-bottom: 0; }
+.missing-data-class-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+.missing-data-class-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.missing-data-list {
+  list-style: none;
+  padding: 0 0 0 8px;
+  margin: 0;
+}
+.missing-data-list li {
+  font-size: 13.5px;
+  color: #475569;
+  line-height: 1.85;
+  padding: 2px 0;
+}
+.missing-data-list li::before {
+  content: '• ';
+  color: #94a3b8;
+}
+.missing-data-empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 20px 0;
+}
 
 /* ── 数据统计 modal 内容 ── */
 .stats-summary {
