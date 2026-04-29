@@ -65,6 +65,18 @@ let searchNavRequestId = 0;
 const UNI_LABEL_MAX_LEN = 9;
 const TMAP_GEOCODE_SUCCESS = 0;
 
+/** 地理编码连续失败计数器（非"未找到结果"类错误），用于检测配额不足 */
+var consecutiveGeocodeFailures = 0;
+var MAX_CONSECUTIVE_FAILURES = 5;
+
+/** 是否已报过 API 额度已满（避免重复弹 toast） */
+var quotaExceededNotified = false;
+
+/** 瓦片图片加载失败计数（10 秒窗口内达阈值则判定额度已满） */
+var tileErrorCount = 0;
+var tileErrorThreshold = 8;
+var tileErrorWindowTimer = null;
+
 /** 将一个大学名称加入编码队列，结果通过 callback(T.LngLat|null) 返回 */
 function enqueueGeocode(university, city, callback) {
   if (Object.prototype.hasOwnProperty.call(geoCache, university)) {
@@ -108,12 +120,32 @@ function processNextGeocode() {
   }
 
   const keyword = (item.city ? item.city + ' ' : '') + item.university;
+  var completed = false; // 防止回调与超时双重触发
+
   geocoder.getPoint(keyword, function (result) {
+    if (completed) return;
+    completed = true;
+    console.log('[天地图地理编码]', keyword, '→', result);
     const point = parseGeocodeResult(result);
     geoCache[item.university] = point; // null 时表示未找到，也缓存，避免重复请求
     item.callback(point);
     setTimeout(processNextGeocode, 250);
   });
+
+  // 超时保护（8 秒）：若天地图 API 因额度已满等原因拒绝请求，回调可能永不触发
+  setTimeout(function () {
+    if (completed) return;
+    completed = true;
+    console.warn('[天地图地理编码] 超时（8s）：', keyword);
+    // 计入连续失败，触发阈值检测
+    consecutiveGeocodeFailures++;
+    if (consecutiveGeocodeFailures >= MAX_CONSECUTIVE_FAILURES) {
+      handleSevereFailure();
+    }
+    // 不缓存超时结果，允许后续重试
+    item.callback(null);
+    processNextGeocode();
+  }, 8000);
 }
 
 /* ─── DOM 就绪后立即初始化（无需等待地图 API） ───────────── */
@@ -202,6 +234,37 @@ window.onTMapCallback = function () {
 
   // 绑定地图相关的 UI 事件
   setupMapEventListeners();
+
+  // ─── 地图瓦片加载失败监听 ────────────────────────────
+  // 天地图瓦片通过 <img> 加载，域名含 tianditu.gov.cn
+  // 若短时间内大量瓦片加载失败，判定额度已满
+  document.addEventListener('error', function (e) {
+    var el = e.target;
+    if (!el || el.tagName !== 'IMG') return;
+    var src = el.src || el.currentSrc || '';
+    if (src.indexOf('tianditu.gov.cn') === -1) return;
+
+    tileErrorCount++;
+    console.warn('[天地图瓦片] 加载失败 (' + tileErrorCount + '/' + tileErrorThreshold + '):', src.substring(0, 100));
+
+    // 首次失败启动 10 秒重置窗口
+    if (!tileErrorWindowTimer) {
+      tileErrorWindowTimer = setTimeout(function () {
+        tileErrorCount = 0;
+        tileErrorWindowTimer = null;
+      }, 10000);
+    }
+
+    if (tileErrorCount >= tileErrorThreshold) {
+      handleQuotaExceeded();
+      // 达到阈值后停止计数，避免重复触发
+      tileErrorCount = 0;
+      if (tileErrorWindowTimer) {
+        clearTimeout(tileErrorWindowTimer);
+        tileErrorWindowTimer = null;
+      }
+    }
+  }, true); // 捕获阶段监听
 };
 
 /* ─── 地图相关 UI 初始化（地图 API 就绪后调用） ──────────── */
@@ -303,6 +366,10 @@ function clearActiveMarkers() {
 
 /** 按当前复选框状态重算并渲染标记 */
 function renderSelectedMarkers() {
+  // 切换班级时重置错误状态，允许重试地理编码
+  consecutiveGeocodeFailures = 0;
+  quotaExceededNotified = false;
+
   const selectedClasses = getSelectedClasses();
   const renderVersion = ++markerRenderVersion;
   clearActiveMarkers();
@@ -987,12 +1054,57 @@ function parseGeocodeResult(result) {
   const geocodeSuccess = hasStatusMethod && result.getStatus() === TMAP_GEOCODE_SUCCESS;
   const hasLocationPointMethod = typeof result.getLocationPoint === 'function';
   if (geocodeSuccess && hasLocationPointMethod) {
+    consecutiveGeocodeFailures = 0;
     return result.getLocationPoint();
   }
   if (typeof result.lng === 'number' && typeof result.lat === 'number') {
+    consecutiveGeocodeFailures = 0;
     return new T.LngLat(result.lng, result.lat);
   }
+
+  // 检测错误状态码（天地图实际只返回 status=1 表示服务异常，无 311/301 等细分码）
+  // 额度已满时 status !== 0，累积失败计数，达阈值则触发 handleSevereFailure
+  if (hasStatusMethod) {
+    var status = result.getStatus();
+    if (status !== TMAP_GEOCODE_SUCCESS) {
+      consecutiveGeocodeFailures++;
+      if (consecutiveGeocodeFailures >= MAX_CONSECUTIVE_FAILURES) {
+        handleSevereFailure();
+      }
+    }
+  } else {
+    consecutiveGeocodeFailures++;
+    if (consecutiveGeocodeFailures >= MAX_CONSECUTIVE_FAILURES) {
+      handleSevereFailure();
+    }
+  }
+
   return null;
+}
+
+/** 处理天地图 API 当日配额已满 */
+function handleQuotaExceeded() {
+  // 清空等待队列
+  geocodeQueue.length = 0;
+  geocodingActive = false;
+  pendingGeocodesCount = 0;
+  updateLoadingOverlay();
+
+  if (!quotaExceededNotified) {
+    quotaExceededNotified = true;
+    showToast('⚠️ 天地图 API 今日调用额度已满，地图定位功能暂时不可用');
+  }
+}
+
+/** 处理地理编码连续严重失败 */
+function handleSevereFailure() {
+  // 清空等待队列
+  geocodeQueue.length = 0;
+  geocodingActive = false;
+  pendingGeocodesCount = 0;
+  updateLoadingOverlay();
+
+  showToast('⚠️ 天地图 API 连续请求失败，地图定位可能受限，请稍后重试');
 }
 
 function parseStudentCoordinate(student) {
