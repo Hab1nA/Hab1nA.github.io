@@ -157,6 +157,9 @@ document.addEventListener('DOMContentLoaded', function () {
 /* ─── 地图初始化（天地图 API 回调） ──────────────────────── */
 window.onTMapCallback = function () {
   map = new T.Map('map-container');
+  
+  // 切换为卫星图像
+  map.setMapType(T.MapType.SATELLITE);
 
   // 以中国地理中心附近为初始视野
   map.centerAndZoom(new T.LngLat(105.4, 37.9), 5);
@@ -164,13 +167,7 @@ window.onTMapCallback = function () {
   map.setMinZoom(4);
   map.setMaxZoom(18);
 
-  // 切换为卫星图像
-  map.setMapType(T.MapType.SATELLITE);
-
   // 缩放控件（位于左下）
-  const zoomControl = new T.Control.Zoom();
-  zoomControl.setPosition(T_ANCHOR_BOTTOM_LEFT);
-  map.addControl(zoomControl);
 
   // 比例尺（位于左下）
   const scaleControl = new T.Control.Scale();
