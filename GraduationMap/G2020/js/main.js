@@ -890,8 +890,9 @@ function buildStatsContent() {
 
   for (let i = 1; i <= 4; i++) {
     const data = ALL_CLASS_DATA[i] || [];
-    classCounts[i] = data.length;
-    totalAll += data.length;
+    const missingData = ALL_MISSING_DATA[i] || [];
+    classCounts[i] = data.length + missingData.length;
+    totalAll += data.length + missingData.length;
     data.forEach(function (s) {
       cityCounts[s.city] = (cityCounts[s.city] || 0) + 1;
       uniCounts[s.university] = (uniCounts[s.university] || 0) + 1;
@@ -950,7 +951,11 @@ function buildStatsContent() {
 function updateCountBadges() {
   for (let i = 1; i <= 4; i++) {
     const el = document.getElementById('count' + i);
-    if (el) el.textContent = (ALL_CLASS_DATA[i] ? ALL_CLASS_DATA[i].length : 0) + '人';
+    if (el) {
+      const classCount = ALL_CLASS_DATA[i] ? ALL_CLASS_DATA[i].length : 0;
+      const missingCount = ALL_MISSING_DATA[i] ? ALL_MISSING_DATA[i].length : 0;
+      el.textContent = (classCount + missingCount) + '人';
+    }
   }
 }
 
@@ -958,7 +963,9 @@ function updateTotalCount() {
   let total = 0;
   for (let i = 1; i <= 4; i++) {
     if (document.getElementById('class' + i).checked) {
-      total += ALL_CLASS_DATA[i] ? ALL_CLASS_DATA[i].length : 0;
+      const classCount = ALL_CLASS_DATA[i] ? ALL_CLASS_DATA[i].length : 0;
+      const missingCount = ALL_MISSING_DATA[i] ? ALL_MISSING_DATA[i].length : 0;
+      total += classCount + missingCount;
     }
   }
   document.getElementById('totalCount').textContent = '共加载 ' + total + ' 人';
