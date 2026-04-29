@@ -789,6 +789,11 @@ function updateMissingDataToggle() {
     totalMissing += missingList.length;
   }
 
+  if (totalMissing === 0) {
+    toggle.classList.add('hidden');
+    return;
+  }
+
   countEl.textContent = totalMissing + '人';
   toggle.classList.remove('hidden');
 }

@@ -457,7 +457,7 @@ body {
   transition: background var(--ease), box-shadow var(--ease);
 }
 .missing-panel:hover {
-  background: rgba(255, 215, 0, 0.12);
+  background: rgba(255, 255, 255, 0.60);
   box-shadow: 0 0 18px rgba(255, 215, 0, 0.30);
 }
 .missing-panel.hidden {
