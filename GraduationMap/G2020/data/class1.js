@@ -200,8 +200,5 @@ const class1Data = [
 
 const class1MissingData = [
   // { "name": "同学姓名" }
-  { "name": "谢铠啊" },
-  { "name": "谢铠吧" },
-  { "name": "谢铠是" },
-  { "name": "谢铠去" }
+  { "name": "王培任" }
 ];
