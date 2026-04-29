@@ -97,7 +97,9 @@ const class3Data = [
   {
     "name": "陈信长",
     "university": "多伦多大学",
-    "city": "加拿大"
+    "city": "加拿大",
+    "latitude": 43.6634909,
+    "longitude": -79.3984076
   },
   {
     "name": "陈宁丹璐",

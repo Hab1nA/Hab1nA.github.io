@@ -82,7 +82,9 @@ const class2Data = [
   {
     "name": "李彦希",
     "university": "厦门大学马来西亚校区",
-    "city": "马来西亚"
+    "city": "马来西亚",
+    "latitude": 2.8327035,
+    "longitude": 101.7005764
   },
   {
     "name": "杨欣月",
@@ -142,7 +144,9 @@ const class2Data = [
   {
     "name": "刘子阅",
     "university": "新加坡国立大学",
-    "city": "新加坡"
+    "city": "新加坡",
+    "latitude": 1.2976547,
+    "longitude": 103.470158
   },
   {
     "name": "张煜",

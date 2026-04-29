@@ -177,7 +177,9 @@ const class1Data = [
   {
     "name": "朱梅可芸",
     "university": "帝国理工学院",
-    "city": "英国"
+    "city": "英国",
+    "latitude": 51.4988255,
+    "longitude": -0.1774431
   },
   {
     "name": "邹亦峰",
