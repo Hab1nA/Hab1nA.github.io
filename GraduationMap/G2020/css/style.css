@@ -438,7 +438,7 @@ body {
 .missing-panel {
   position: fixed;
   right: 22px;
-  bottom: calc(38px + 260px); /* class-panel bottom + 实际高度 + 间距 */
+  /* bottom 由 JS 动态计算：班级筛选面板顶部 + 20px 间距 */
   background: var(--panel-bg);
   border-radius: var(--radius);
   box-shadow: var(--panel-shadow);

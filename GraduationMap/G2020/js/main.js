@@ -130,6 +130,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // 人数徽标
   updateCountBadges();
 
+  // 初始化"数据缺失"面板相对"班级筛选"面板的位置
+  positionMissingPanel();
+
   // 关于 / 数据统计按钮（不依赖地图）
   document.getElementById('aboutBtn').addEventListener('click', function () {
     openModal('aboutModal');
@@ -168,6 +171,11 @@ document.addEventListener('DOMContentLoaded', function () {
         closeModal(m.id);
       });
     }
+  });
+
+  // 窗口大小变化时重新计算"数据缺失"面板位置
+  window.addEventListener('resize', function () {
+    positionMissingPanel();
   });
 });
 
@@ -1005,4 +1013,27 @@ function escapeHTML(text) {
     .replace(/>/g, '>')
     .replace(/"/g, '"')
     .replace(/'/g, '\u0027');
+}
+
+/**
+ * 将"数据缺失"面板定位在"班级筛选"面板上方固定 20px 处。
+ * 通过计算 classPanel 的 top 值（视口高度 - bottom - height）来获得班级筛选面板顶部位置，
+ * 然后将 missingPanel 的底部放在 classPanel 顶部 + 20px 的位置。
+ */
+function positionMissingPanel() {
+  var missingPanel = document.getElementById('missingDataToggle');
+  var classPanel = document.getElementById('classPanel');
+  if (!missingPanel || !classPanel) return;
+
+  var classPanelStyle = window.getComputedStyle(classPanel);
+  var classPanelHeight = classPanel.offsetHeight;
+  var classPanelBottom = parseFloat(classPanelStyle.bottom) || 36;
+
+  // 班级筛选面板顶部在视口中的 y 坐标 = 视口高度 - bottom - height
+  var classPanelTop = window.innerHeight - classPanelBottom - classPanelHeight;
+
+  // "数据缺失"面板底部 = 班级筛选面板顶部 + 20px（即在其上方 16px）
+  var missingBottom = window.innerHeight - classPanelTop + 16;
+
+  missingPanel.style.bottom = missingBottom + 'px';
 }
