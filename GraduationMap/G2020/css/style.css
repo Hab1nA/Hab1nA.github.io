@@ -31,6 +31,22 @@ body {
   background: #d1e8ff;
 }
 
+/* ── 口令验证：页面内容隐藏（验证通过后滑入） ── */
+.header {
+  transform: translateY(-100%);
+  transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.header.reveal {
+  transform: translateY(0);
+}
+.class-panel {
+  transform: translateY(calc(100% + 36px));
+  transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.class-panel.reveal {
+  transform: translateY(0);
+}
+
 /* ══════════════════════════════════════════════════════════
    顶部导航栏
    ══════════════════════════════════════════════════════════ */
@@ -58,7 +74,7 @@ body {
   user-select: none;
   flex-shrink: 0;
 }
-.brand-icon { font-size: 24px; filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.7)); }
+.brand-icon { width: 24px; height: 24px; filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.7)); }
 .brand-title {
   font-size: 19px;
   font-weight: 700;
@@ -211,7 +227,7 @@ body {
    ══════════════════════════════════════════════════════════ */
 #map-container {
   position: absolute;
-  top: var(--hdr-h);
+  top: 0;
   left: 0;
   right: 0;
   bottom: 0;
@@ -585,4 +601,118 @@ body {
 .tdt-popup-content-wrapper {
   border-radius: 12px !important;
   overflow: hidden !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   口令验证遮罩
+   ══════════════════════════════════════════════════════════ */
+.password-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  pointer-events: auto;
+}
+
+.password-gate-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.35);
+  max-width: 420px;
+  width: 100%;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  animation: pop-in 0.28s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.password-gate-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  margin: 0;
+}
+
+.password-gate-desc {
+  font-size: 14px;
+  color: var(--muted);
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.password-gate-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text);
+  outline: none;
+  transition: border-color var(--ease), box-shadow var(--ease);
+  text-align: center;
+}
+.password-gate-input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+.password-gate-input::placeholder {
+  color: #94a3b8;
+}
+
+.password-gate-btn {
+  width: 100%;
+  padding: 12px 0;
+  background: var(--brand);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--ease), transform 0.1s;
+}
+.password-gate-btn:hover {
+  background: #2563eb;
+}
+.password-gate-btn:active {
+  transform: scale(0.97);
+}
+
+.password-gate-error {
+  font-size: 13px;
+  color: #ef4444;
+  min-height: 18px;
+  margin: 0;
+  text-align: center;
+  transition: opacity 0.2s;
+}
+
+/* 口令错误时输入框抖动 */
+.password-gate-input.shake {
+  animation: shake 0.4s ease;
+  border-color: #ef4444;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-8px); }
+  40%       { transform: translateX(8px); }
+  60%       { transform: translateX(-5px); }
+  80%       { transform: translateX(5px); }
+}
+
+/* 口令验证通过：遮罩淡出 */
+.password-gate.dismiss {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
 }

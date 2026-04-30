@@ -3,17 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>天府第七中学 G2020 级蹭饭图</title>
+  <title>蹭饭图</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🗺️</text></svg>">
 </head>
 <body>
 
   <!-- ══════════════════════════════════════
-       顶部导航栏
+        口令验证遮罩
+       ══════════════════════════════════════ -->
+  <div class="password-gate" id="passwordGate">
+    <div class="password-gate-card">
+      <h2 class="password-gate-title">🔒 身份验证</h2>
+      <p class="password-gate-desc">这是哪所学校？</p>
+      <input type="text" id="passwordInput" class="password-gate-input"
+             placeholder="请输入……" autocomplete="off" autofocus>
+      <button id="passwordSubmit" class="password-gate-btn">验证</button>
+      <p class="password-gate-error" id="passwordError"></p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+        顶部导航栏
        ══════════════════════════════════════ -->
   <header class="header">
     <div class="header-brand">
-      <span class="brand-icon">🗺️</span>
+      <img class="brand-icon" src="favicon.ico" alt="logo">
       <h1 class="brand-title">天府第七中学 G2020 级蹭饭图</h1>
     </div>
 

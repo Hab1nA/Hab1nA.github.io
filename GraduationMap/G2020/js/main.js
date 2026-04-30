@@ -128,7 +128,7 @@ function processNextGeocode() {
     return;
   }
 
-  const keyword = (item.city ? item.city + ' ' : '') + item.university;
+  const keyword = (item.city ? item.city + '市' : '') + item.university;
   var completed = false; // 防止回调与超时双重触发
 
   geocoder.getPoint(keyword, function (result) {
@@ -157,8 +157,93 @@ function processNextGeocode() {
   }, 8000);
 }
 
+/* ─── 口令验证 ────────────────────────────────────────────── */
+
+/**
+ * 使用 Web Crypto API 计算字符串的 SHA-256 哈希（hex 格式）
+ * @param {string} input 待哈希的字符串
+ * @returns {Promise<string>} 十六进制哈希字符串
+ */
+function sha256Hex(input) {
+  var encoder = new TextEncoder();
+  var data = encoder.encode(input);
+  return crypto.subtle.digest('SHA-256', data).then(function (hashBuffer) {
+    var hashArray = Array.from(new Uint8Array(hashBuffer));
+    var hashHex = hashArray.map(function (b) {
+      return b.toString(16).padStart(2, '0');
+    }).join('');
+    return hashHex;
+  });
+}
+
+/**
+ * 初始化口令验证遮罩。
+ * 只有输入正确口令后才能去除模糊并查看页面。
+ *
+ * ★ 代码中不包含任何口令原文，仅存储 SHA-256 哈希值。
+ */
+function initPasswordGate() {
+  // 合法口令的 SHA-256 哈希（口令原文不会出现在代码中）
+  var validHashes = [
+    '61709488ccbe179a5e67f0e9743cfc3873738f77c44efb944cdd1664c99e17b3',
+    '547971b416fcc76c0e08c153b12eff69ff5807c60271fe27187b95a359d6b396',
+    '8fc5700a1439de46364bcb4ad2720479852cf8ed29769bcd588d20d52a34dc9a'
+  ];
+
+  var gate = document.getElementById('passwordGate');
+  var input = document.getElementById('passwordInput');
+  var submitBtn = document.getElementById('passwordSubmit');
+  var errorEl = document.getElementById('passwordError');
+
+  /**
+   * 验证口令
+   */
+  function verify() {
+    var raw = input.value.trim();
+    if (!raw) return;
+
+    sha256Hex(raw).then(function (hash) {
+      var match = false;
+      for (var i = 0; i < validHashes.length; i++) {
+        if (hash === validHashes[i]) {
+          match = true;
+          break;
+        }
+      }
+
+      if (match) {
+        // 验证通过
+        document.querySelector('.header').classList.add('reveal');
+        document.querySelector('.class-panel').classList.add('reveal');
+        gate.classList.add('dismiss');
+        // 动画完成后移除 DOM
+        setTimeout(function () {
+          gate.style.display = 'none';
+        }, 450);
+      } else {
+        // 口令错误
+        errorEl.textContent = '名称错误，请重试';
+        input.classList.add('shake');
+        input.value = '';
+        input.focus();
+        setTimeout(function () {
+          input.classList.remove('shake');
+        }, 400);
+      }
+    });
+  }
+
+  submitBtn.addEventListener('click', verify);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') verify();
+  });
+}
+
 /* ─── DOM 就绪后立即初始化（无需等待地图 API） ───────────── */
 document.addEventListener('DOMContentLoaded', function () {
+  /* ─── 口令验证 ──────────────────────────────────────────── */
+  initPasswordGate();
+
   // 绑定数据（供人数显示与统计使用）
   ALL_CLASS_DATA[1] = typeof class1Data !== 'undefined' ? class1Data : [];
   ALL_CLASS_DATA[2] = typeof class2Data !== 'undefined' ? class2Data : [];
