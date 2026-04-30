@@ -10,7 +10,21 @@
 <body>
 
   <!-- ══════════════════════════════════════
-       顶部导航栏
+        口令验证遮罩
+       ══════════════════════════════════════ -->
+  <div class="password-gate" id="passwordGate">
+    <div class="password-gate-card">
+      <h2 class="password-gate-title">🔒 身份验证</h2>
+      <p class="password-gate-desc">这是哪所学校？</p>
+      <input type="text" id="passwordInput" class="password-gate-input"
+             placeholder="请输入……" autocomplete="off" autofocus>
+      <button id="passwordSubmit" class="password-gate-btn">验证</button>
+      <p class="password-gate-error" id="passwordError"></p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+        顶部导航栏
        ══════════════════════════════════════ -->
   <header class="header">
     <div class="header-brand">
