@@ -422,7 +422,7 @@ body {
 .modal-close:hover { background: #e2e8f0; color: var(--text); }
 
 .modal-body {
-  padding: 24px;
+  padding: 28px 32px;
   overflow-y: auto;
   flex: 1;
   /* 美化滚动条（现代浏览器） */
@@ -439,8 +439,19 @@ body {
 .about-section h3 { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
 .about-section p,
 .about-section li { font-size: 13.5px; color: #475569; line-height: 1.75; }
-.about-section ul { padding-left: 18px; }
+.about-section ul,
+.about-section ol { padding-left: 20px; }
 .about-section li { margin-bottom: 3px; }
+.about-section ol { margin-top: 6px; }
+.about-section kbd {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 0 5px;
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #334155;
+}
 .about-section code {
   background: #f1f5f9; padding: 1px 6px; border-radius: 4px;
   font-size: 12px; font-family: 'JetBrains Mono','Fira Code',monospace; color: var(--brand);
