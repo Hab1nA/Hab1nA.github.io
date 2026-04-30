@@ -72,6 +72,12 @@ const MAX_CONSECUTIVE_FAILURES = 5;
 /** 是否已报过 API 额度已满（避免重复弹 toast） */
 let quotaExceededNotified = false;
 
+/** 是否已报过连续严重失败（避免重复弹 toast） */
+let severeFailureNotified = false;
+
+/** 取消版本号：每次强制清空队列时递增，使滞留的异步回调可检测自身是否已过期 */
+let geocodeCancelledVersion = 0;
+
 /** 瓦片图片加载失败计数（10 秒窗口内达阈值则判定额度已满） */
 let tileErrorCount = 0;
 let tileErrorThreshold = 8;
@@ -87,10 +93,13 @@ function enqueueGeocode(university, city, callback) {
   pendingGeocodesCount++;
   updateLoadingOverlay();
 
+  const capturedVersion = geocodeCancelledVersion;
   geocodeQueue.push({
     university,
     city,
     callback: function (point) {
+      // 若队列已被强制清空（版本号已变），跳过计数操作以防负数
+      if (geocodeCancelledVersion !== capturedVersion) return;
       callback(point);
       pendingGeocodesCount--;
       updateLoadingOverlay();
@@ -369,6 +378,7 @@ function renderSelectedMarkers() {
   // 切换班级时重置错误状态，允许重试地理编码
   consecutiveGeocodeFailures = 0;
   quotaExceededNotified = false;
+  severeFailureNotified = false;
 
   const selectedClasses = getSelectedClasses();
   const renderVersion = ++markerRenderVersion;
@@ -1084,6 +1094,8 @@ function parseGeocodeResult(result) {
 
 /** 处理天地图 API 当日配额已满 */
 function handleQuotaExceeded() {
+  // 递增取消版本号，使所有在途回调失效，避免 pendingGeocodesCount 变负
+  geocodeCancelledVersion++;
   // 清空等待队列
   geocodeQueue.length = 0;
   geocodingActive = false;
@@ -1098,13 +1110,18 @@ function handleQuotaExceeded() {
 
 /** 处理地理编码连续严重失败 */
 function handleSevereFailure() {
+  // 递增取消版本号，使所有在途回调失效，避免 pendingGeocodesCount 变负
+  geocodeCancelledVersion++;
   // 清空等待队列
   geocodeQueue.length = 0;
   geocodingActive = false;
   pendingGeocodesCount = 0;
   updateLoadingOverlay();
 
-  showToast('⚠️ 天地图 API 连续请求失败，地图定位可能受限，请稍后重试');
+  if (!severeFailureNotified) {
+    severeFailureNotified = true;
+    showToast('⚠️ 天地图 API 连续请求失败，地图定位可能受限，请稍后重试');
+  }
 }
 
 function parseStudentCoordinate(student) {
