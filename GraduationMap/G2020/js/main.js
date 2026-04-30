@@ -128,7 +128,7 @@ function processNextGeocode() {
     return;
   }
 
-  const keyword = (item.city ? item.city + ' ' : '') + item.university;
+  const keyword = (item.city ? item.city + '市' : '') + item.university;
   var completed = false; // 防止回调与超时双重触发
 
   geocoder.getPoint(keyword, function (result) {
