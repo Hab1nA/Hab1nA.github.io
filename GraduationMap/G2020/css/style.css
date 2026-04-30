@@ -58,7 +58,7 @@ body {
   user-select: none;
   flex-shrink: 0;
 }
-.brand-icon { font-size: 24px; filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.7)); }
+.brand-icon { width: 24px; height: 24px; filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.7)); }
 .brand-title {
   font-size: 19px;
   font-weight: 700;
