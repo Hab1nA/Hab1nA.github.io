@@ -66,16 +66,16 @@ const UNI_LABEL_MAX_LEN = 9;
 const TMAP_GEOCODE_SUCCESS = 0;
 
 /** 地理编码连续失败计数器（非"未找到结果"类错误），用于检测配额不足 */
-var consecutiveGeocodeFailures = 0;
-var MAX_CONSECUTIVE_FAILURES = 5;
+let consecutiveGeocodeFailures = 0;
+const MAX_CONSECUTIVE_FAILURES = 5;
 
 /** 是否已报过 API 额度已满（避免重复弹 toast） */
-var quotaExceededNotified = false;
+let quotaExceededNotified = false;
 
 /** 瓦片图片加载失败计数（10 秒窗口内达阈值则判定额度已满） */
-var tileErrorCount = 0;
-var tileErrorThreshold = 8;
-var tileErrorWindowTimer = null;
+let tileErrorCount = 0;
+let tileErrorThreshold = 8;
+let tileErrorWindowTimer = null;
 
 /** 将一个大学名称加入编码队列，结果通过 callback(T.LngLat|null) 返回 */
 function enqueueGeocode(university, city, callback) {
