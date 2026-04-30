@@ -36,12 +36,12 @@ const class1Data = [
   },
   {
     "name": "林晟周",
-    "university": "电子科技大学（沙河校区）",
+    "university": "电子科技大学（清水河校区）",
     "city": "成都"
   },
   {
     "name": "潘思颖",
-    "university": "电子科技大学（沙河校区）",
+    "university": "电子科技大学（清水河校区）",
     "city": "成都"
   },
   {

@@ -310,7 +310,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
 /* ─── 地图初始化（天地图 API 回调） ──────────────────────── */
 window.onTMapCallback = function () {
-  map = new T.Map('map-container');
+  // 卫星影像底图
+  var satelliteUrl = "http://t0.tianditu.gov.cn/img_w/wmts?"
+    + "SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=img&STYLE=default"
+    + "&TILEMATRIXSET=w&FORMAT=tiles"
+    + "&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=7403bbf65cbf354d6a9e3574134f9789";
+  var satelliteLayer = new T.TileLayer(satelliteUrl, { minZoom: 1, maxZoom: 18 });
+  map = new T.Map('map-container', { layers: [satelliteLayer] });
 
   // 以中国地理中心附近为初始视野
   map.centerAndZoom(new T.LngLat(105.4, 37.9), 5);
