@@ -31,6 +31,12 @@ let searchOpenedExistingMarker = null;
 /** 标记渲染版本号，用于忽略过期异步地理编码回调 */
 let markerRenderVersion = 0;
 
+/** 是否为触摸设备（无精确 hover 能力） */
+let isTouchDevice = false;
+
+/** 当前通过点击地图标记打开的信息窗引用（用于触摸设备点击空白关闭） */
+let activeInfoWindowMarker = null;
+
 /** 各班颜色 */
 const CLASS_COLORS = {
   1: '#a74bb6', // 紫
@@ -306,6 +312,11 @@ document.addEventListener('DOMContentLoaded', function () {
   window.addEventListener('resize', function () {
     positionMissingPanel();
   });
+
+  // ─── 触摸设备检测 ────────────────────────────────────
+  isTouchDevice = ('ontouchstart' in window) ||
+    (navigator.maxTouchPoints > 0) ||
+    (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
 });
 
 /* ─── 地图初始化（天地图 API 回调） ──────────────────────── */
@@ -398,6 +409,20 @@ function setupMapEventListeners() {
     }
   });
   document.getElementById('searchNavClose').addEventListener('click', hideSearchNav);
+
+  // ─── 触摸设备：点击地图空白处关闭信息窗 ────────────
+  if (isTouchDevice) {
+    map.addEventListener('click', function (e) {
+      // marker 的 click 事件会先触发并设置 activeInfoWindowMarker
+      // 此处用 setTimeout 确保在 marker click 之后执行
+      setTimeout(function () {
+        if (activeInfoWindowMarker) {
+          activeInfoWindowMarker.closeInfoWindow();
+          activeInfoWindowMarker = null;
+        }
+      }, 0);
+    });
+  }
 }
 
 /* ─── 标记加载 / 移除 ────────────────────────────────────── */
@@ -539,9 +564,19 @@ function createMarker(point, group, color, merged) {
 
   marker.__university = group.university;
   marker.__infoWindow = infoWindow;
-  marker.addEventListener('mouseover', function () { marker.openInfoWindow(hoverInfoWindow); });
-  marker.addEventListener('mouseout',  function () { marker.closeInfoWindow(); });
-  marker.addEventListener('click',     function () { marker.openInfoWindow(infoWindow); });
+
+  if (!isTouchDevice) {
+    // 桌面端：悬停预览 + 点击打开信息窗
+    marker.addEventListener('mouseover', function () { marker.openInfoWindow(hoverInfoWindow); });
+    marker.addEventListener('mouseout',  function () { marker.closeInfoWindow(); });
+  }
+
+  marker.addEventListener('click', function () {
+    marker.openInfoWindow(infoWindow);
+    if (isTouchDevice) {
+      activeInfoWindowMarker = marker;
+    }
+  });
 
   return marker;
 }
@@ -567,7 +602,8 @@ function buildInfoWindowHTML(group, color, merged) {
   const safeCity = escapeHTML(group.city);
   const classBadgeText = merged ? '多班<br>合并' : (group.classNums[0] + '班');
 
-  return '<div style="font-family:-apple-system,BlinkMacSystemFont,\'PingFang SC\',\'Microsoft YaHei\',sans-serif;min-width:300px;border-radius:8px;overflow:hidden;">'
+  var infoMinWidth = window.innerWidth <= 480 ? '240px' : '300px';
+  return '<div style="font-family:-apple-system,BlinkMacSystemFont,\'PingFang SC\',\'Microsoft YaHei\',sans-serif;min-width:' + infoMinWidth + ';border-radius:8px;overflow:hidden;">'
     + '<div style="background:' + color + ';padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:0;">'
     + '<span style="background:rgba(255,255,255,0.25);padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;color:white;flex-shrink:0;white-space:nowrap;">' + classBadgeText + '</span>'
     + (group.university.length > 15

@@ -727,3 +727,281 @@ body {
   pointer-events: none;
   transition: opacity 0.4s ease;
 }
+
+/* ══════════════════════════════════════════════════════════
+   响应式适配 — 平板及以下 (≤ 768px)
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── 顶部导航栏：两行布局 ── */
+  .header {
+    height: auto;
+    min-height: 56px;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    gap: 6px;
+  }
+
+  .header-brand {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .brand-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .brand-title {
+    font-size: 14px;
+    letter-spacing: 0.2px;
+    white-space: normal;
+  }
+
+  /* 右侧操作区：独占一行 */
+  .header-actions {
+    flex: 1 1 100%;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .search-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .search-input {
+    width: 100%;
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+
+  .search-btn {
+    padding: 6px 10px;
+  }
+
+  .action-btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    white-space: nowrap;
+  }
+
+  /* ── 搜索结果导航条 ── */
+  .search-nav {
+    top: calc(var(--hdr-h) + 52px);
+    font-size: 11px;
+    padding: 4px 6px;
+    border-radius: 18px;
+  }
+  .search-nav-btn {
+    width: 24px;
+    height: 24px;
+  }
+  .search-nav-info .nav-label {
+    max-width: 120px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  /* ── 右下角面板 ── */
+  .class-panel {
+    right: 10px;
+    bottom: 20px;
+    min-width: 150px;
+    border-radius: 12px;
+  }
+  .panel-header {
+    padding: 8px 12px;
+  }
+  .panel-title {
+    font-size: 12px;
+  }
+  .panel-body {
+    padding: 2px 0;
+  }
+  .class-item {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .class-name {
+    font-size: 12px;
+  }
+  .class-count {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+  .panel-footer {
+    padding: 6px 12px;
+    font-size: 10px;
+  }
+
+  /* ── 数据缺失面板 ── */
+  .missing-panel {
+    right: 10px;
+    min-width: 150px;
+    padding: 8px 12px;
+    gap: 6px;
+    border-radius: 12px;
+  }
+  .missing-icon { font-size: 13px; }
+  .missing-label { font-size: 12px; }
+  .missing-count { font-size: 10px; }
+
+  /* ── 模态框 ── */
+  .modal {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .modal-card {
+    max-width: 100%;
+    max-height: 88vh;
+    border-radius: 16px 16px 0 0;
+    margin: 0;
+  }
+
+  .modal-card.wide {
+    max-width: 100%;
+  }
+
+  .modal-head {
+    padding: 14px 18px;
+  }
+
+  .modal-title {
+    font-size: 15px;
+  }
+
+  .modal-body {
+    padding: 18px 18px 24px;
+  }
+
+  .about-section h3 {
+    font-size: 13px;
+  }
+
+  .about-section p,
+  .about-section li {
+    font-size: 12.5px;
+  }
+
+  .about-section ul,
+  .about-section ol {
+    padding-left: 16px;
+  }
+
+  /* ── Toast ── */
+  .toast {
+    bottom: 80px;
+    font-size: 12px;
+    padding: 8px 16px;
+    max-width: calc(100vw - 40px);
+    white-space: normal;
+    text-align: center;
+  }
+
+  /* ── 加载遮罩 ── */
+  .loading-box {
+    padding: 24px 28px;
+    border-radius: 14px;
+    gap: 12px;
+  }
+  .loading-text {
+    font-size: 13px;
+  }
+
+  /* ── 口令验证 ── */
+  .password-gate-card {
+    max-width: 340px;
+    padding: 20px 16px;
+    gap: 14px;
+    border-radius: 16px;
+  }
+  .password-gate-title { font-size: 18px; }
+  .password-gate-desc { font-size: 13px; }
+  .password-gate-input { font-size: 14px; padding: 10px 14px; }
+  .password-gate-btn { font-size: 15px; padding: 10px 0; }
+
+  /* ── 数据统计 ── */
+  .stats-num { font-size: 30px; }
+  .stats-badges { gap: 6px; }
+  .stats-badge { font-size: 11px; padding: 5px 10px; }
+  .bar-label { width: 64px; font-size: 11px; }
+  .bar-count { width: 32px; font-size: 11px; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   响应式适配 — 小屏手机 (≤ 480px)
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .brand-title {
+    font-size: 12px;
+  }
+
+  .header-actions {
+    gap: 4px;
+  }
+
+  .action-btn {
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+
+  /* ── 面板更紧凑 ── */
+  .class-panel {
+    right: 6px;
+    bottom: 12px;
+    min-width: 130px;
+  }
+  .class-item {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  .class-name { font-size: 11px; }
+  .class-dot { width: 12px; height: 12px; }
+  .class-dot::after { width: 5px; height: 5px; }
+
+  .missing-panel {
+    right: 6px;
+    min-width: 130px;
+    padding: 6px 10px;
+  }
+
+  /* ── 搜索导航更紧凑 ── */
+  .search-nav {
+    top: calc(var(--hdr-h) + 50px);
+    gap: 3px;
+    padding: 3px 5px;
+  }
+  .search-nav-btn { width: 22px; height: 22px; }
+  .search-nav-btn svg { width: 11px; height: 11px; }
+  .search-nav-info { font-size: 10px; }
+  .search-nav-info .nav-label { max-width: 80px; }
+
+  /* ── 密码卡 ── */
+  .password-gate-card {
+    max-width: 300px;
+    padding: 16px 12px;
+    gap: 12px;
+  }
+  .password-gate-title { font-size: 16px; }
+  .password-gate-btn { font-size: 14px; }
+
+  /* ── Toast ── */
+  .toast {
+    bottom: 70px;
+    font-size: 11px;
+  }
+
+  /* ── 模态框 ── */
+  .modal-body {
+    padding: 14px 12px 20px;
+  }
+  .modal-head {
+    padding: 10px 14px;
+  }
+  .modal-title { font-size: 14px; }
+}
