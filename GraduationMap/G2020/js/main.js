@@ -31,8 +31,10 @@ let searchOpenedExistingMarker = null;
 /** 标记渲染版本号，用于忽略过期异步地理编码回调 */
 let markerRenderVersion = 0;
 
-/** 是否为触摸设备（无精确 hover 能力） */
-let isTouchDevice = false;
+/** 是否为触摸设备（无精确 hover 能力），在脚本加载时即时计算 */
+const isTouchDevice = ('ontouchstart' in window) ||
+  (navigator.maxTouchPoints > 0) ||
+  (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
 
 /** 当前通过点击地图标记打开的信息窗引用（用于触摸设备点击空白关闭） */
 let activeInfoWindowMarker = null;
@@ -312,11 +314,6 @@ document.addEventListener('DOMContentLoaded', function () {
   window.addEventListener('resize', function () {
     positionMissingPanel();
   });
-
-  // ─── 触摸设备检测 ────────────────────────────────────
-  isTouchDevice = ('ontouchstart' in window) ||
-    (navigator.maxTouchPoints > 0) ||
-    (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
 });
 
 /* ─── 地图初始化（天地图 API 回调） ──────────────────────── */
