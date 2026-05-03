@@ -289,20 +289,11 @@
                 img.src = "about:blank";
                 resolve(true); // 超时也算通了（fetch 已确认端口可达）
               }, timeoutMs || 2000);
-              img.onload = function () {
-                clearTimeout(t);
-                img.onload = null;
-                img.onerror = null;
-                resolve(true);
-              };
-              img.onerror = function () {
-                clearTimeout(t);
-                img.onload = null;
-                img.onerror = null;
-                resolve(true);
-              }; // 错误也算响应了
-              img.src = VSCODE_URL + "/_vscode-remote-resource?" + Date.now();
-            });
+      // 通过 fetch 探测 VSCode Server 端口是否可达
+      function probeVSCode(timeoutMs) {
+        return fetch(VSCODE_URL, { mode: "no-cors", cache: "no-store" })
+          .then(function () {
+            return true;
           })
           .catch(function () {
             // 网络错误说明还没就绪
