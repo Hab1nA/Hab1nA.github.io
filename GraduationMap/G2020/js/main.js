@@ -1337,11 +1337,15 @@ function positionMissingPanel() {
   var classPanel = document.getElementById('classPanel');
   if (!missingPanel || !classPanel) return;
 
-  // 使用 getBoundingClientRect 获取班级面板的实际渲染位置，自动考虑安全区域等
-  var classRect = classPanel.getBoundingClientRect();
+  var classPanelStyle = window.getComputedStyle(classPanel);
+  var classPanelHeight = classPanel.offsetHeight;
+  var classPanelBottom = parseFloat(classPanelStyle.bottom) || 36;
+
+  // 班级筛选面板顶部在视口中的 y 坐标 = 视口高度 - bottom - height
+  var classPanelTop = window.innerHeight - classPanelBottom - classPanelHeight;
 
   // "数据缺失"面板底部 = 班级筛选面板顶部上方 16px
-  var missingBottom = window.innerHeight - classRect.top + 16;
+  var missingBottom = window.innerHeight - classPanelTop + 16;
 
   missingPanel.style.bottom = missingBottom + 'px';
 }
