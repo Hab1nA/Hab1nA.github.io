@@ -853,13 +853,14 @@ body {
   /* ── 模态框 ── */
   .modal {
     padding: 10px;
-    align-items: flex-end;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    align-items: center;
   }
 
   .modal-card {
     max-width: 100%;
-    max-height: 88vh;
-    border-radius: 16px 16px 0 0;
+    max-height: 75vh;
+    border-radius: 16px;
     margin: 0;
   }
 
@@ -877,6 +878,7 @@ body {
 
   .modal-body {
     padding: 18px 18px 24px;
+    -webkit-overflow-scrolling: touch;
   }
 
   .about-section h3 {
@@ -997,6 +999,12 @@ body {
   }
 
   /* ── 模态框 ── */
+  .modal {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+  .modal-card {
+    max-height: 65vh;
+  }
   .modal-body {
     padding: 14px 12px 20px;
   }
