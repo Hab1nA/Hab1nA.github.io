@@ -123,23 +123,22 @@
       to { transform: rotate(360deg); }
     }
 
-    /* 手动命令 */
-    #manual-cmd {
+    /* 提示框 */
+    #hint-box {
       display: none;
       margin-top: 20px;
       padding: 12px 16px;
       background: #2d2d2d;
-      border-radius: 8px;
-      font-family: "Cascadia Code", "Fira Code", monospace;
-      font-size: 12px;
-      color: #d4d4d4;
+      border-left: 3px solid #e5a00d;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #cccccc;
       text-align: left;
       max-width: 90vw;
-      word-break: break-all;
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
-    #manual-cmd.show {
+    #hint-box.show {
       display: block;
     }
 
@@ -198,10 +197,7 @@
     <div id="status-text"></div>
     <div id="spinner" class="spinner"></div>
 
-    <div id="manual-cmd">
-      <div style="color:#888;margin-bottom:6px;">如自动启动失败，请在 Termux 中手动执行：</div>
-      <div id="cmd-content"></div>
-    </div>
+    <div id="hint-box"></div>
   </div>
 
   <!-- VSCode iframe -->
@@ -214,44 +210,41 @@
 
   <script>
     (function () {
-      const TASKER_SCRIPT = "/data/data/com.termux/files/home/.termux/tasker/start-vscode.sh";
-      const VSCODE_URL = "http://localhost:8000";
-      const RETRY_INTERVAL = 2000;    // 轮询间隔（ms）
-      const MAX_RETRIES = 30;         // 最大重试次数（约60秒）
-      const INITIAL_DELAY = 3000;     // 触发 intent 后等待几秒再开始轮询
+      const BRIDGE_URL   = "http://localhost:9000";
+      const VSCODE_URL   = "http://localhost:8000";
+      const POLL_INTERVAL = 2000;
+      const MAX_RETRIES  = 30;
+      const INITIAL_DELAY = 3000;
 
-      const launchPanel = document.getElementById("launch-panel");
-      const statusText = document.getElementById("status-text");
-      const spinner = document.getElementById("spinner");
-      const manualCmd = document.getElementById("manual-cmd");
-      const cmdContent = document.getElementById("cmd-content");
+      const launchPanel     = document.getElementById("launch-panel");
+      const statusText      = document.getElementById("status-text");
+      const spinner         = document.getElementById("spinner");
+      const hintBox         = document.getElementById("hint-box");
       const vscodeContainer = document.getElementById("vscode-container");
-      const vscodeFrame = document.getElementById("vscode-frame");
-      const btnRetry = document.getElementById("btn-retry");
-      const btnLaunch = document.getElementById("btn-launch");
+      const vscodeFrame     = document.getElementById("vscode-frame");
+      const btnRetry        = document.getElementById("btn-retry");
+      const btnLaunch       = document.getElementById("btn-launch");
 
       let pollingTimer = null;
-      let retryCount = 0;
-      let launched = false;
-
-      // 展示手动命令
-      cmdContent.textContent =
-        "pd sh alpine --isolated \\\n" +
-        "  --bind /data/data/com.termux:/termux \\\n" +
-        "  --bind ~:/home/termux \\\n" +
-        "  --bind /storage/emulated/0:/sdcard \\\n" +
-        "  -- code serve-web --host '0.0.0.0' --without-connection-token";
+      let retryCount   = 0;
+      let launched     = false;
+      let bridgeReady   = false;
 
       function setStatus(msg) {
         statusText.textContent = msg;
       }
 
-      function showSpinner(show) {
-        spinner.classList.toggle("show", show);
+      function showSpinner(s) {
+        spinner.classList.toggle("show", s);
       }
 
-      function showManualCmd(show) {
-        manualCmd.classList.toggle("show", show);
+      function showHint(msg) {
+        hintBox.innerHTML = msg;
+        hintBox.classList.add("show");
+      }
+
+      function hideHint() {
+        hintBox.classList.remove("show");
       }
 
       function showVSCode() {
@@ -262,14 +255,6 @@
         stopPolling();
       }
 
-      function showRetryButton() {
-        btnRetry.style.display = "block";
-      }
-
-      function hideRetryButton() {
-        btnRetry.style.display = "none";
-      }
-
       function stopPolling() {
         if (pollingTimer) {
           clearTimeout(pollingTimer);
@@ -277,19 +262,21 @@
         }
       }
 
-      // 通过 fetch 探测 VSCode Server 端口是否可达
-      function probeVSCode() {
-        return fetch(VSCODE_URL, { mode: "no-cors", cache: "no-store" })
-          .then(function () {
-            return true;
-          })
-          .catch(function () {
-            // 网络错误说明还没就绪
-            return false;
-          });
+      // ---------- 探测桥接服务 ----------
+      function probeBridge() {
+        return fetch(BRIDGE_URL + "/ping", { mode: "cors", cache: "no-store", signal: AbortSignal.timeout(2000) })
+          .then(function (r) { return r.ok; })
+          .catch(function () { return false; });
       }
 
-      // 轮询检测 VSCode Server 是否就绪
+      // ---------- 探测 VSCode Server ----------
+      function probeVSCode() {
+        return fetch(VSCODE_URL, { mode: "no-cors", cache: "no-store" })
+          .then(function () { return true; })
+          .catch(function () { return false; });
+      }
+
+      // ---------- 轮询等待 VSCode 就绪 ----------
       function startPolling() {
         stopPolling();
         retryCount = 0;
@@ -309,96 +296,112 @@
             if (retryCount >= MAX_RETRIES) {
               setStatus("⏱️ 超时：未能连接到 VSCode Server");
               showSpinner(false);
-              showManualCmd(true);
-              showRetryButton();
-              launched = false; // 允许用户直接重试，无需刷新页面
+              showHint(
+                "❌ 连接超时<br><br>" +
+                "请在 Termux 中手动执行：<br>" +
+                "<code style='font-size:11px;word-break:break-all;'>bash ~/.termux/tasker/start-vscode.sh</code><br><br>" +
+                "执行完成后刷新此页面。"
+              );
+              launched = false;
               return;
             }
 
-            pollingTimer = setTimeout(check, RETRY_INTERVAL);
+            pollingTimer = setTimeout(check, POLL_INTERVAL);
           });
         }
 
         pollingTimer = setTimeout(check, INITIAL_DELAY);
       }
 
-      // 构建 Android Intent URI 触发 Termux:Tasker
-      function buildTaskerIntent() {
-        // Termux:Tasker 的 intent 格式
-        // action: com.termux.tasker.RUN_COMMAND
-        // extras: com.termux.tasker.RUN_COMMAND_PATH = 脚本路径
-        var scriptPath = encodeURIComponent(TASKER_SCRIPT);
-        return (
-          "intent://#Intent;" +
-          "action=com.termux.tasker.RUN_COMMAND;" +
-          "S.com.termux.tasker.RUN_COMMAND_PATH=" + scriptPath + ";" +
-          "B.com.termux.tasker.RUN_COMMAND_BACKGROUND=true;" +
-          "package=com.termux.tasker;" +
-          "end"
-        );
+      // ---------- 通过桥接服务启动 VSCode ----------
+      function triggerBridgeStart() {
+        return fetch(BRIDGE_URL + "/start", { mode: "cors", cache: "no-store", signal: AbortSignal.timeout(5000) })
+          .then(function (r) {
+            return r.ok;
+          })
+          .catch(function () {
+            return false;
+          });
       }
 
-      // 点击启动按钮
+      // ---------- 点击启动按钮 ----------
       window.launchVSCode = function (event) {
         if (event) event.preventDefault();
         if (launched) return;
         launched = true;
 
-        setStatus("正在调用 Termux:Tasker...");
+        setStatus("正在通过桥接服务启动 VSCode Server...");
         showSpinner(true);
-        showManualCmd(false);
-        hideRetryButton();
+        hideHint();
 
-        // 尝试通过 intent 触发 Termux:Tasker
-        var intentUrl = buildTaskerIntent();
+        if (!bridgeReady) {
+          setStatus("⚠️ 桥接服务未连接，尝试中...");
+        }
 
-        // 通过隐藏的 <a> 标签触发 intent URI（Android Chrome 不允许在 iframe 内触发 intent）
-        var intentLink = document.createElement("a");
-        intentLink.style.display = "none";
-        intentLink.href = intentUrl;
-        document.body.appendChild(intentLink);
-        intentLink.click();
-        setTimeout(function () {
-          document.body.removeChild(intentLink);
-        }, 500);
-
-        // 等待一小段时间让 Termux:Tasker 有机会启动，然后开始轮询
-        startPolling();
-
-        // 如果15秒后还没连上，显示手动命令作为备选
-        setTimeout(function () {
-          if (!vscodeContainer.classList.contains("show")) {
-            showManualCmd(true);
+        triggerBridgeStart().then(function (ok) {
+          if (ok) {
+            setStatus("桥接服务已收到请求，等待 code-server 启动...");
+          } else {
+            setStatus("⚠️ 桥接服务通信失败，但仍将检测 code-server...");
+            showHint(
+              "⚠️ 无法连接到桥接服务 (localhost:9000)<br><br>" +
+              "请确认已在 Termux 中启动了桥接服务：<br>" +
+              "<code style='font-size:11px;'>bash ~/.termux/tasker/bridge-server.sh</code><br><br>" +
+              "或直接手动启动 code-server：<br>" +
+              "<code style='font-size:11px;word-break:break-all;'>pd sh alpine --isolated --bind /data/data/com.termux:/termux --bind ~:/home/termux --bind /storage/emulated/0:/sdcard -- code serve-web --host '0.0.0.0' --without-connection-token</code>"
+            );
           }
-        }, 15000);
+          startPolling();
+        });
       };
 
-      // 重连按钮
+      // ---------- 重连按钮 ----------
       window.retryConnect = function () {
         launched = false;
         stopPolling();
         setStatus("");
         showSpinner(false);
-        showManualCmd(false);
-        hideRetryButton();
+        hideHint();
         launchPanel.classList.remove("hidden");
         vscodeContainer.classList.remove("show");
         vscodeFrame.src = "about:blank";
         btnLaunch.focus();
       };
 
-      // 如果 VSCode 已经运行，直接检测
-      // （用户可能已经手动启动了 code-server）
-      window.addEventListener("DOMContentLoaded", function () {
+      // ---------- 页面初始化 ----------
+      function init() {
+        // 1. 先检测桥接服务是否在线
+        probeBridge().then(function (ok) {
+          bridgeReady = ok;
+          if (ok) {
+            setStatus("✅ 桥接服务已连接，可以启动 VSCode");
+          } else {
+            setStatus("🔌 桥接服务未连接");
+            showHint(
+              "📋 首次使用请先在 Termux 中执行：<br>" +
+              "<code style='font-size:11px;'>bash ~/.termux/tasker/bridge-server.sh</code><br><br>" +
+              "建议设为开机自启：<br>" +
+              "<code style='font-size:11px;'>echo 'bash ~/.termux/tasker/bridge-server.sh &' >> ~/.bashrc</code><br><br>" +
+              "启动桥接服务后，刷新此页面即可。"
+            );
+          }
+        });
+
+        // 2. 检测 code-server 是否已在运行（用户可能手动启动了）
         probeVSCode().then(function (ready) {
           if (ready) {
             setStatus("检测到已运行的 VSCode Server，直接连接...");
             showSpinner(true);
             setTimeout(showVSCode, 800);
           }
-          // 未运行，等待用户点击按钮
         });
-      });
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+      } else {
+        init();
+      }
     })();
   </script>
 </body>
