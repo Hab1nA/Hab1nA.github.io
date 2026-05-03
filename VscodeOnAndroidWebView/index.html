@@ -277,20 +277,8 @@
         }
       }
 
-      // 用 Image 探针确认端口可达（fetch no-cors 总返回 opaque，需二次确认）
-      function probeVSCode(timeoutMs) {
-        return fetch(VSCODE_URL, { mode: "no-cors", cache: "no-store" })
-          .then(function () {
-            return new Promise(function (resolve) {
-              var img = new Image();
-              var t = setTimeout(function () {
-                img.onload = null;
-                img.onerror = null;
-                img.src = "about:blank";
-                resolve(true); // 超时也算通了（fetch 已确认端口可达）
-              }, timeoutMs || 2000);
       // 通过 fetch 探测 VSCode Server 端口是否可达
-      function probeVSCode(timeoutMs) {
+      function probeVSCode() {
         return fetch(VSCODE_URL, { mode: "no-cors", cache: "no-store" })
           .then(function () {
             return true;
@@ -310,7 +298,7 @@
           retryCount++;
           setStatus("正在等待 VSCode Server 启动... (" + retryCount + "/" + MAX_RETRIES + ")");
 
-          probeVSCode(2000).then(function (ready) {
+          probeVSCode().then(function (ready) {
             if (ready) {
               setStatus("✅ VSCode Server 已就绪！");
               showSpinner(false);
@@ -402,7 +390,7 @@
       // 如果 VSCode 已经运行，直接检测
       // （用户可能已经手动启动了 code-server）
       window.addEventListener("DOMContentLoaded", function () {
-        probeVSCode(1500).then(function (ready) {
+        probeVSCode().then(function (ready) {
           if (ready) {
             setStatus("检测到已运行的 VSCode Server，直接连接...");
             showSpinner(true);
