@@ -214,7 +214,7 @@
 
   <script>
     (function () {
-      const TASKER_SCRIPT = "~/.termux/tasker/start-vscode.sh";
+      const TASKER_SCRIPT = "/data/data/com.termux/files/home/.termux/tasker/start-vscode.sh";
       const VSCODE_URL = "http://localhost:8000";
       const RETRY_INTERVAL = 2000;    // 轮询间隔（ms）
       const MAX_RETRIES = 30;         // 最大重试次数（约60秒）
@@ -277,6 +277,18 @@
         }
       }
 
+      // 通过 fetch 探测 VSCode Server 端口是否可达
+      function probeVSCode() {
+        return fetch(VSCODE_URL, { mode: "no-cors", cache: "no-store" })
+          .then(function () {
+            return true;
+          })
+          .catch(function () {
+            // 网络错误说明还没就绪
+            return false;
+          });
+      }
+
       // 轮询检测 VSCode Server 是否就绪
       function startPolling() {
         stopPolling();
@@ -286,55 +298,24 @@
           retryCount++;
           setStatus("正在等待 VSCode Server 启动... (" + retryCount + "/" + MAX_RETRIES + ")");
 
-          // 使用 fetch 探测（no-cors 模式避免 CORS 报错，只要能连上就算成功）
-          fetch(VSCODE_URL, { mode: "no-cors", cache: "no-store" })
-            .then(function () {
-              // no-cors 模式下 fetch 总会成功（opaque response），
-              // 但我们还能通过 Image 或 script 探针做二次确认
-              return tryProbe();
-            })
-            .catch(function () {
-              // 网络错误说明还没就绪
-              return false;
-            })
-            .then(function (ready) {
-              if (ready) {
-                setStatus("✅ VSCode Server 已就绪！");
-                showSpinner(false);
-                setTimeout(showVSCode, 500);
-                return;
-              }
+          probeVSCode().then(function (ready) {
+            if (ready) {
+              setStatus("✅ VSCode Server 已就绪！");
+              showSpinner(false);
+              setTimeout(showVSCode, 500);
+              return;
+            }
 
-              if (retryCount >= MAX_RETRIES) {
-                setStatus("⏱️ 超时：未能连接到 VSCode Server");
-                showSpinner(false);
-                showManualCmd(true);
-                showRetryButton();
-                return;
-              }
+            if (retryCount >= MAX_RETRIES) {
+              setStatus("⏱️ 超时：未能连接到 VSCode Server");
+              showSpinner(false);
+              showManualCmd(true);
+              showRetryButton();
+              launched = false; // 允许用户直接重试，无需刷新页面
+              return;
+            }
 
-              pollingTimer = setTimeout(check, RETRY_INTERVAL);
-            });
-        }
-
-        // 用 Image 探针二次确认（图片加载失败也说明端口通了）
-        function tryProbe() {
-          return new Promise(function (resolve) {
-            var img = new Image();
-            var timeout = setTimeout(function () {
-              img.src = "";
-              resolve(true); // 超时也算通了（fetch 已确认端口可达）
-            }, 2000);
-
-            img.onload = function () {
-              clearTimeout(timeout);
-              resolve(true);
-            };
-            img.onerror = function () {
-              clearTimeout(timeout);
-              resolve(true); // 错误也算响应了
-            };
-            img.src = VSCODE_URL + "/_vscode-remote-resource?" + Date.now();
+            pollingTimer = setTimeout(check, RETRY_INTERVAL);
           });
         }
 
@@ -348,7 +329,7 @@
         // extras: com.termux.tasker.RUN_COMMAND_PATH = 脚本路径
         var scriptPath = encodeURIComponent(TASKER_SCRIPT);
         return (
-          "intent:#Intent;" +
+          "intent://#Intent;" +
           "action=com.termux.tasker.RUN_COMMAND;" +
           "S.com.termux.tasker.RUN_COMMAND_PATH=" + scriptPath + ";" +
           "B.com.termux.tasker.RUN_COMMAND_BACKGROUND=true;" +
@@ -371,17 +352,15 @@
         // 尝试通过 intent 触发 Termux:Tasker
         var intentUrl = buildTaskerIntent();
 
-        // 方法1：尝试直接导航到 intent URL
-        // 使用 iframe 方式触发，避免页面跳转
-        var intentFrame = document.createElement("iframe");
-        intentFrame.style.display = "none";
-        intentFrame.src = intentUrl;
-        document.body.appendChild(intentFrame);
-
-        // 如果 intent 失败（浏览器不支持），短暂延迟后展示手动命令
+        // 通过隐藏的 <a> 标签触发 intent URI（Android Chrome 不允许在 iframe 内触发 intent）
+        var intentLink = document.createElement("a");
+        intentLink.style.display = "none";
+        intentLink.href = intentUrl;
+        document.body.appendChild(intentLink);
+        intentLink.click();
         setTimeout(function () {
-          document.body.removeChild(intentFrame);
-        }, 2000);
+          document.body.removeChild(intentLink);
+        }, 500);
 
         // 等待一小段时间让 Termux:Tasker 有机会启动，然后开始轮询
         startPolling();
@@ -411,26 +390,14 @@
       // 如果 VSCode 已经运行，直接检测
       // （用户可能已经手动启动了 code-server）
       window.addEventListener("DOMContentLoaded", function () {
-        fetch(VSCODE_URL, { mode: "no-cors", cache: "no-store" })
-          .then(function () {
-            return new Promise(function (resolve) {
-              var img = new Image();
-              var t = setTimeout(function () { resolve(true); }, 1500);
-              img.onload = function () { clearTimeout(t); resolve(true); };
-              img.onerror = function () { clearTimeout(t); resolve(true); };
-              img.src = VSCODE_URL + "/_vscode-remote-resource?" + Date.now();
-            });
-          })
-          .then(function (ready) {
-            if (ready) {
-              setStatus("检测到已运行的 VSCode Server，直接连接...");
-              showSpinner(true);
-              setTimeout(showVSCode, 800);
-            }
-          })
-          .catch(function () {
-            // 未运行，等待用户点击按钮
-          });
+        probeVSCode().then(function (ready) {
+          if (ready) {
+            setStatus("检测到已运行的 VSCode Server，直接连接...");
+            showSpinner(true);
+            setTimeout(showVSCode, 800);
+          }
+          // 未运行，等待用户点击按钮
+        });
       });
     })();
   </script>
