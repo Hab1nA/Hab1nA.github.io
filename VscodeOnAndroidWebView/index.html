@@ -284,11 +284,23 @@
             return new Promise(function (resolve) {
               var img = new Image();
               var t = setTimeout(function () {
-                img.src = "";
+                img.onload = null;
+                img.onerror = null;
+                img.src = "about:blank";
                 resolve(true); // 超时也算通了（fetch 已确认端口可达）
               }, timeoutMs || 2000);
-              img.onload = function () { clearTimeout(t); resolve(true); };
-              img.onerror = function () { clearTimeout(t); resolve(true); }; // 错误也算响应了
+              img.onload = function () {
+                clearTimeout(t);
+                img.onload = null;
+                img.onerror = null;
+                resolve(true);
+              };
+              img.onerror = function () {
+                clearTimeout(t);
+                img.onload = null;
+                img.onerror = null;
+                resolve(true);
+              }; // 错误也算响应了
               img.src = VSCODE_URL + "/_vscode-remote-resource?" + Date.now();
             });
           })
