@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VSCode Server - Android</title>
+    <style>
+        :root {
+            --bg: #1e1e2e;
+            --bg-panel: #252536;
+            --bg-hover: #2d2d44;
+            --text: #cdd6f4;
+            --text-dim: #6c7086;
+            --accent: #89b4fa;
+            --green: #a6e3a1;
+            --red: #f38ba8;
+            --yellow: #f9e2af;
+            --orange: #fab387;
+            --border: #313244;
+            --radius: 8px;
+            --transition: 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* ── 顶部导航栏 ── */
+        .topbar {
+            height: 48px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .logo-icon {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+
+        .logo-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            transition: background var(--transition);
+        }
+
+        .status-dot.online {
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
+        .status-dot.offline {
+            background: var(--red);
+            box-shadow: 0 0 6px var(--red);
+        }
+        .status-dot.checking {
+            background: var(--yellow);
+            box-shadow: 0 0 6px var(--yellow);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .status-text {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .btn {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 14px;
+            border-radius: var(--radius);
+            font-size: 12px;
+            cursor: pointer;
+            transition: background var(--transition);
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: var(--border);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.85;
+        }
+
+        /* ── iframe 容器 ── */
+        .iframe-wrapper {
+            flex: 1;
+            position: relative;
+            background: var(--bg);
+        }
+
+        .iframe-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* ── 加载遮罩 / 离线遮罩 ── */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            background: var(--bg);
+            z-index: 5;
+            transition: opacity 0.4s ease;
+        }
+
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .overlay-icon {
+            width: 64px;
+            height: 64px;
+            opacity: 0.5;
+        }
+
+        .overlay-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .overlay-subtitle {
+            font-size: 13px;
+            color: var(--text-dim);
+            text-align: center;
+            line-height: 1.6;
+            max-width: 320px;
+        }
+
+        .retry-hint {
+            font-size: 12px;
+            color: var(--yellow);
+            margin-top: 8px;
+        }
+
+        /* ── 底部提示 ── */
+        .bottombar {
+            height: 28px;
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            font-size: 11px;
+            color: var(--text-dim);
+            flex-shrink: 0;
+        }
+
+        .bottombar a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* ── 响应式 ── */
+        @media (max-width: 480px) {
+            .topbar {
+                padding: 0 10px;
+                gap: 8px;
+            }
+            .title {
+                font-size: 12px;
+            }
+            .btn {
+                padding: 4px 10px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ══════════════════════ 顶部导航栏 ══════════════════════ -->
+    <div class="topbar">
+        <!-- VSCode Logo SVG -->
+        <div class="logo-icon">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M73.5 96.5L26.5 79.5V20.5L73.5 3.5L83.5 8.5V91.5L73.5 96.5Z" fill="#007ACC" stroke="#007ACC" stroke-width="2"/>
+                <path d="M73.5 96.5L26.5 79.5L20 75V25L26.5 20.5L73.5 3.5V96.5Z" fill="#1E1E2E" stroke="#007ACC" stroke-width="2"/>
+                <path d="M59 55L43 63V37L59 45V55Z" fill="#007ACC"/>
+                <path d="M43 37L26.5 45.5V54.5L43 63V55L32.5 50L43 45V37Z" fill="#007ACC"/>
+                <path d="M73.5 3.5L59 10L43 18V27L73.5 3.5Z" fill="#007ACC"/>
+                <path d="M73.5 96.5L59 90L43 82V73L73.5 96.5Z" fill="#007ACC"/>
+            </svg>
+        </div>
+
+        <span class="title">VSCode Server</span>
+
+        <span class="spacer"></span>
+
+        <span class="status-dot checking" id="statusDot"></span>
+        <span class="status-text" id="statusLabel">检测中...</span>
+
+        <button class="btn btn-primary" id="btnRestart" title="重新加载 VSCode">刷新</button>
+        <button class="btn" id="btnDirect" title="在新标签页打开 code-server">新窗口</button>
+    </div>
+
+    <!-- ══════════════════════ 主内容区 ══════════════════════ -->
+    <div class="iframe-wrapper" id="iframeWrapper">
+        <!-- 加载 / 离线遮罩 -->
+        <div class="overlay" id="overlay">
+            <div class="spinner" id="spinner"></div>
+            <div class="overlay-icon" id="overlayIcon" style="display:none;">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="45" stroke="currentColor" stroke-width="6" opacity="0.3"/>
+                    <line x1="50" y1="30" x2="50" y2="55" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+                    <circle cx="50" cy="68" r="4" fill="currentColor"/>
+                </svg>
+            </div>
+            <div class="overlay-title" id="overlayTitle">正在连接 code-server...</div>
+            <div class="overlay-subtitle" id="overlaySubtitle">
+                等待 code-server 就绪<br>这可能需要几秒钟
+            </div>
+            <div class="retry-hint" id="retryHint" style="display:none;">
+                code-server 似乎未启动<br>请确认已在 Termux 中运行 <b>./start.sh</b>
+            </div>
+        </div>
+
+        <!-- VSCode iframe -->
+        <iframe
+            id="vscodeFrame"
+            src=""
+            allow="clipboard-read; clipboard-write; cross-origin-isolated"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads allow-pointer-lock allow-popups-to-escape-sandbox"
+            loading="eager">
+        </iframe>
+    </div>
+
+    <!-- ══════════════════════ 底部状态栏 ══════════════════════ -->
+    <div class="bottombar">
+        <span>code-server</span>
+        <span>·</span>
+        <span id="bottomStatus">等待连接</span>
+        <span>·</span>
+        <span>💡 提示：如需单独访问 code-server，在新标签页打开 </span>
+        <a href="http://localhost:8080" target="_blank" rel="noopener">:8080</a>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            const CODE_SERVER_URL = 'http://localhost:8080';
+
+            // DOM 元素
+            const iframe = document.getElementById('vscodeFrame');
+            const overlay = document.getElementById('overlay');
+            const spinner = document.getElementById('spinner');
+            const overlayIcon = document.getElementById('overlayIcon');
+            const overlayTitle = document.getElementById('overlayTitle');
+            const overlaySubtitle = document.getElementById('overlaySubtitle');
+            const retryHint = document.getElementById('retryHint');
+            const statusDot = document.getElementById('statusDot');
+            const statusLabel = document.getElementById('statusLabel');
+            const bottomStatus = document.getElementById('bottomStatus');
+            const btnRestart = document.getElementById('btnRestart');
+            const btnDirect = document.getElementById('btnDirect');
+
+            let checkInterval = null;
+            let isOnline = false;
+            let retryCount = 0;
+            const MAX_RETRIES = 30;
+
+            // ── 更新状态 UI ──
+            function setStatus(state) {
+                statusDot.className = 'status-dot ' + state;
+                switch (state) {
+                    case 'checking':
+                        statusLabel.textContent = '检测中...';
+                        bottomStatus.textContent = '正在检测 code-server';
+                        break;
+                    case 'online':
+                        statusLabel.textContent = '在线';
+                        bottomStatus.textContent = 'code-server 运行中';
+                        break;
+                    case 'offline':
+                        statusLabel.textContent = '离线';
+                        bottomStatus.textContent = 'code-server 未响应';
+                        break;
+                }
+            }
+
+            // ── 显示遮罩 ──
+            function showOverlay(type) {
+                overlay.classList.remove('hidden');
+                if (type === 'loading') {
+                    spinner.style.display = 'block';
+                    overlayIcon.style.display = 'none';
+                    retryHint.style.display = 'none';
+                    overlayTitle.textContent = '正在连接 code-server...';
+                    overlaySubtitle.textContent = '等待 code-server 就绪\n这可能需要几秒钟';
+                } else if (type === 'offline') {
+                    spinner.style.display = 'none';
+                    overlayIcon.style.display = 'block';
+                    retryHint.style.display = 'block';
+                    overlayTitle.textContent = '无法连接到 code-server';
+                    overlaySubtitle.textContent = '请确认 code-server 已启动';
+                }
+            }
+
+            function hideOverlay() {
+                overlay.classList.add('hidden');
+            }
+
+            // ── 加载 iframe ──
+            function loadVSCode() {
+                // 添加随机参数防止缓存
+                iframe.src = CODE_SERVER_URL + '?t=' + Date.now();
+            }
+
+            // ── 创建带超时的 AbortSignal（兼容旧浏览器/Android WebView）──
+            function createTimeoutSignal(ms) {
+                // 优先使用原生 AbortSignal.timeout（Chrome 103+）
+                if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+                    try { return AbortSignal.timeout(ms); } catch(e) { /* fall through */ }
+                }
+                // 回退方案：手动 AbortController 超时（保存引用以便取消）
+                var controller = new AbortController();
+                var timerId = setTimeout(function() { controller.abort(); }, ms);
+                // 将 timerId 挂在 controller 上，供调用方取消
+                controller._timerId = timerId;
+                return { signal: controller.signal, controller: controller };
+            }
+
+            // ── 取消 createTimeoutSignal 回退方案的计时器 ──
+            function clearTimeoutSignal(result) {
+                if (result && result.controller && result.controller._timerId) {
+                    clearTimeout(result.controller._timerId);
+                }
+            }
+
+            // ── 健康检查 ──
+            function checkCodeServer() {
+                // 防止并发检查堆积
+                if (checkCodeServer._pending) return;
+                checkCodeServer._pending = true;
+
+                setStatus('checking');
+
+                var s1 = createTimeoutSignal(3000);
+                var signal1 = s1.signal || s1;
+                fetch(CODE_SERVER_URL + '/healthz', {
+                    method: 'GET',
+                    mode: 'no-cors',
+                    cache: 'no-cache',
+                    signal: signal1
+                })
+                .then(function() {
+                    // no-cors 返回 opaque response（端口可达即表示成功）
+                    clearTimeoutSignal(s1);
+                    checkCodeServer._pending = false;
+                    onServerReady();
+                })
+                .catch(function() {
+                    clearTimeoutSignal(s1);
+                    // /healthz 不可用，尝试 HEAD 根路径
+                    var s2 = createTimeoutSignal(3000);
+                    var signal2 = s2.signal || s2;
+                    return fetch(CODE_SERVER_URL, {
+                        method: 'HEAD',
+                        mode: 'no-cors',
+                        cache: 'no-cache',
+                        signal: signal2
+                    }).then(function() {
+                        clearTimeoutSignal(s2);
+                        checkCodeServer._pending = false;
+                        onServerReady();
+                    }).catch(function() {
+                        clearTimeoutSignal(s2);
+                        checkCodeServer._pending = false;
+                        retryCount++;
+                        if (retryCount < MAX_RETRIES) {
+                            if (retryCount % 5 === 0) {
+                                showOverlay('loading');
+                            }
+                        } else {
+                            onServerOffline();
+                        }
+                    });
+                });
+            }
+
+            function onServerReady() {
+                if (isOnline) return; // 已在线，不重复加载
+                isOnline = true;
+                retryCount = 0;
+                setStatus('online');
+                hideOverlay();
+                loadVSCode();
+            }
+
+            function onServerOffline() {
+                isOnline = false;
+                setStatus('offline');
+                showOverlay('offline');
+                iframe.src = '';
+            }
+
+            // ── 开始轮询检测 ──
+            function startChecking() {
+                if (checkInterval) clearInterval(checkInterval);
+                retryCount = 0;
+                isOnline = false;
+                setStatus('checking');
+                showOverlay('loading');
+                iframe.src = '';
+
+                // 首次立即检查
+                checkCodeServer();
+
+                // 然后每 2 秒检查一次
+                checkInterval = setInterval(checkCodeServer, 2000);
+            }
+
+            function stopChecking() {
+                if (checkInterval) {
+                    clearInterval(checkInterval);
+                    checkInterval = null;
+                }
+            }
+
+            // ── 刷新 VSCode ──
+            function refreshVSCode() {
+                stopChecking();
+                iframe.src = '';
+                startChecking();
+            }
+
+            // ── 事件绑定 ──
+            btnRestart.addEventListener('click', refreshVSCode);
+            btnDirect.addEventListener('click', function() {
+                window.open(CODE_SERVER_URL, '_blank', 'noopener');
+            });
+
+            // 双击标题栏可重新加载
+            document.querySelector('.title').addEventListener('dblclick', refreshVSCode);
+
+            // iframe 加载成功时隐藏遮罩
+            iframe.addEventListener('load', function() {
+                if (iframe.src && iframe.src !== 'about:blank') {
+                    hideOverlay();
+                    setStatus('online');
+                    bottomStatus.textContent = 'code-server 已连接';
+                }
+            });
+
+            // ── 键盘快捷键（仅当 VSCode iframe 未激活时拦截 Ctrl+R）──
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'r') {
+                    // 仅在 iframe 未加载或焦点不在页面主区域时刷新仪表板
+                    // 避免破坏 VSCode 内部的 Ctrl+R / 搜索替换
+                    var activeEl = document.activeElement;
+                    var isInIframe = (activeEl && activeEl.tagName === 'IFRAME');
+                    if (!isOnline || !isInIframe) {
+                        e.preventDefault();
+                        refreshVSCode();
+                    }
+                }
+            });
+
+            // ── 初始化 ──
+            startChecking();
+
+            console.log('%c🚀 VSCode Server Dashboard %c已就绪',
+                'font-size:14px;color:#89b4fa;', 'color:#cdd6f4;');
+            console.log('%ccode-server: %chttp://localhost:8080',
+                'color:#6c7086;', 'color:#89b4fa;');
+            console.log('%c仪表板:     %chttp://localhost:3000',
+                'color:#6c7086;', 'color:#89b4fa;');
+        })();
+    </script>
+</body>
+</html>
