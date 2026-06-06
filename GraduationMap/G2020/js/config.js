@@ -14,6 +14,9 @@ const CONFIG = {
   /** 页面顶部导航栏标题文字 */
   pageTitle: '天府第七中学 G2020 级蹭饭图',
 
+  /** 浏览器标签页标题文字 */
+  browserTitle: '蹭饭图',
+
   /** 口令验证界面的提示问题 */
   passwordPrompt: '这是哪所学校？',
 

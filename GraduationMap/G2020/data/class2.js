@@ -26,12 +26,12 @@ var class2Data = [
   },
   {
     "name": "廖彦淳",
-    "university": "电子科技大学",
+    "university": "电子科技大学（沙河校区）",
     "city": "成都"
   },
   {
     "name": "冉童心",
-    "university": "电子科技大学",
+    "university": "电子科技大学（沙河校区）",
     "city": "成都"
   },
   {

@@ -36,7 +36,7 @@ var class3Data = [
   },
   {
     "name": "任国剑",
-    "university": "电子科技大学",
+    "university": "电子科技大学（沙河校区）",
     "city": "成都"
   },
   {

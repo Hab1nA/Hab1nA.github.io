@@ -343,10 +343,11 @@ function initPasswordGate() {
 function setupBrandTitle() {
   const titleEl = document.getElementById('brandTitle');
   const titleText = (typeof CONFIG !== 'undefined' && CONFIG.pageTitle) ? CONFIG.pageTitle : '蹭饭图';
+  const browserTitle = (typeof CONFIG !== 'undefined' && CONFIG.browserTitle) ? CONFIG.browserTitle : titleText;
   if (titleEl) {
     titleEl.textContent = titleText;
   }
-  document.title = titleText;
+  document.title = browserTitle;
 }
 
 function buildAboutContent() {
