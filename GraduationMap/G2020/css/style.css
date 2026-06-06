@@ -10,10 +10,6 @@
   --panel-shadow: 0 8px 36px rgba(0, 0, 0, 0.18);
   --radius: 14px;
   --brand: #3b82f6;
-  --c1: #a74bb6;
-  --c2: #10b981;
-  --c3: #f59e0b;
-  --c4: #a3292b;
   --text: #1e293b;
   --muted: #64748b;
   --ease: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -300,16 +296,6 @@ body {
 }
 .class-item input:checked ~ .class-dot::after { opacity: 1; }
 
-.class-item.c1 .class-dot { border-color: var(--c1); }
-.class-item.c2 .class-dot { border-color: var(--c2); }
-.class-item.c3 .class-dot { border-color: var(--c3); }
-.class-item.c4 .class-dot { border-color: var(--c4); }
-
-.class-item.c1 input:checked ~ .class-dot { background: var(--c1); }
-.class-item.c2 input:checked ~ .class-dot { background: var(--c2); }
-.class-item.c3 input:checked ~ .class-dot { background: var(--c3); }
-.class-item.c4 input:checked ~ .class-dot { background: var(--c4); }
-
 .class-name { font-size: 14px; color: var(--text); font-weight: 500; flex: 1; }
 .class-count {
   font-size: 11px;
@@ -568,6 +554,20 @@ body {
 .bar-track { flex: 1; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
 .bar-fill { height: 100%; border-radius: 4px; transition: width 0.7s cubic-bezier(0.4,0,0.2,1); }
 .bar-count { width: 38px; font-size: 12px; color: #94a3b8; flex-shrink: 0; }
+
+@keyframes marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+.marquee-wrap {
+  overflow: hidden;
+  width: 100%;
+}
+.marquee-inner {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee-scroll 8s linear infinite;
+}
 
 /* ══════════════════════════════════════════════════════════
    Toast 提示

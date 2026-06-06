@@ -1,4 +1,4 @@
-const class3Data = [
+var class3Data = [
   {
     "name": "张楚晨",
     "university": "北京邮电大学",
@@ -203,8 +203,7 @@ const class3Data = [
   }
 ];
 
-const class3MissingData = [
-  // { "name": "同学姓名" }
+var class3MissingData = [
   { "name": "杨涵文" },
   { "name": "许馨文" },
   { "name": "黄晨笛" },

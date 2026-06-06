@@ -15,7 +15,7 @@
   <div class="password-gate" id="passwordGate">
     <div class="password-gate-card">
       <h2 class="password-gate-title">🔒 身份验证</h2>
-      <p class="password-gate-desc">这是哪所学校？</p>
+      <p class="password-gate-desc" id="passwordPrompt"></p>
       <input type="text" id="passwordInput" class="password-gate-input"
              placeholder="请输入……" autocomplete="off" autofocus>
       <button id="passwordSubmit" class="password-gate-btn">验证</button>
@@ -29,7 +29,7 @@
   <header class="header">
     <div class="header-brand">
       <img class="brand-icon" src="favicon.ico" alt="logo">
-      <h1 class="brand-title">天府第七中学 G2020 级蹭饭图</h1>
+      <h1 class="brand-title" id="brandTitle"></h1>
     </div>
 
     <div class="header-actions">
@@ -100,36 +100,13 @@
        <span class="panel-icon">📚</span>
        <span class="panel-title">班级筛选</span>
      </div>
-     <div class="panel-body">
-      <label class="class-item c1">
-        <input type="checkbox" id="class1">
-        <span class="class-dot"></span>
-        <span class="class-name">1 班</span>
-        <span class="class-count" id="count1">0人</span>
-      </label>
-      <label class="class-item c2">
-        <input type="checkbox" id="class2">
-        <span class="class-dot"></span>
-        <span class="class-name">2 班</span>
-        <span class="class-count" id="count2">0人</span>
-      </label>
-      <label class="class-item c3">
-        <input type="checkbox" id="class3">
-        <span class="class-dot"></span>
-        <span class="class-name">3 班</span>
-        <span class="class-count" id="count3">0人</span>
-      </label>
-      <label class="class-item c4">
-        <input type="checkbox" id="class4">
-        <span class="class-dot"></span>
-        <span class="class-name">4 班</span>
-        <span class="class-count" id="count4">0人</span>
-      </label>
-    </div>
-    <div class="panel-footer">
-      <span id="totalCount">共加载 0 人</span>
-    </div>
-  </div>
+     <div class="panel-body" id="classPanelBody">
+       <!-- 班级复选框由 JS 根据 CONFIG.classCount 动态生成 -->
+     </div>
+     <div class="panel-footer">
+       <span id="totalCount">共加载 0 人</span>
+     </div>
+   </div>
 
   <!-- ══════════════════════════════════════
        加载遮罩（地理编码进行时显示）
@@ -151,10 +128,10 @@
          <button class="modal-close" data-modal="aboutModal" aria-label="关闭">✕</button>
        </div>
        <div class="modal-body">
-         <div class="about-section">
-           <h3>🏫 项目简介</h3>
-           <p>天府七中 G2020 级<strong>蹭饭图</strong>是一个展示 2020 届高中毕业生就读大学地理分布的可视化工具。以<strong>天地图卫星影像</strong>为底图，将全年级四个班同学的大学去向以彩色标记呈现在全国地图上——散落各地的求学轨迹，一张图尽收眼底。无论你身处何方，地图上总有一颗属于你的坐标。</p>
-         </div>
+          <div class="about-section">
+            <h3>🏫 项目简介</h3>
+            <p>天府七中 G2020 级<strong>蹭饭图</strong>是一个展示 2020 届高中毕业生就读大学地理分布的可视化工具。以<strong>天地图卫星影像</strong>为底图，将全年级各班同学的大学去向以彩色标记呈现在全国地图上——散落各地的求学轨迹，一张图尽收眼底。无论你身处何方，地图上总有一颗属于你的坐标。</p>
+          </div>
          <div class="about-section">
            <h3>🔒 身份验证</h3>
            <p>页面加载后首先展示验证遮罩，需输入正确的<strong>学校名称</strong>才能解锁地图内容。口令通过浏览器端 SHA-256 哈希比对验证，代码中不储存任何明文口令，确保数据仅在班级内部流转。</p>
@@ -162,8 +139,8 @@
          <div class="about-section">
            <h3>🗺️ 班级筛选</h3>
            <ul>
-             <li>右下角<strong>「班级筛选」面板</strong>提供了 1–4 班的复选框，可单独或任意组合勾选。</li>
-             <li>每个班级以独立颜色标识——1班紫色、2班绿色、3班琥珀色、4班红色。</li>
+             <li>右下角<strong>「班级筛选」面板</strong>提供了 <span id="aboutClassRange"></span> 班的复选框，可单独或任意组合勾选。</li>
+             <li>每个班级以独立颜色标识——<span id="aboutClassColors"></span>。</li>
              <li>若多个班级有同学就读同一所大学，该标记会<strong>自动合并</strong>为灰色，信息窗内分班列出所有同学。</li>
              <li>面板底部实时显示当前已勾选班级的<strong>总人数</strong>。</li>
            </ul>
@@ -231,12 +208,12 @@
          </div>
          <div class="about-section">
            <h3>🛠️ 数据维护</h3>
-           <p>班级数据分别存储在 <code>data/class1.js</code> ~ <code>data/class4.js</code> 中。每个文件导出两个数组：</p>
+           <p>班级数据分别存储在 <span id="aboutDataFiles"></span> 中。每个文件导出两个数组：</p>
            <ul>
              <li><strong>class<i>N</i>Data：</strong>已知去向的同学，每项包含 <code>{ name, university, city }</code> 及可选的 <code>{ latitude, longitude }</code> 坐标字段。</li>
              <li><strong>class<i>N</i>MissingData：</strong>缺失去向的同学，每项包含 <code>{ name }</code>。</li>
            </ul>
-           <p>若地图无法正常加载，请在 <code>index.html</code> 末尾将天地图 API 引用中的 TK 替换为您的有效开发密钥。</p>
+           <p>项目配置（班级数量、颜色、口令等）集中在 <code>js/config.js</code>，修改后即可适配。</p>
          </div>
        </div>
      </div>
@@ -277,40 +254,63 @@
         ══════════════════════════════════════ -->
    <div class="toast" id="toast"></div>
 
-  <!-- ══════════════════════════════════════
-       班级数据文件（各班独立 JS）
-       ══════════════════════════════════════ -->
-  <script src="data/class1.js"></script>
-  <script src="data/class2.js"></script>
-  <script src="data/class3.js"></script>
-  <script src="data/class4.js"></script>
+   <!-- ══════════════════════════════════════
+        项目配置文件（须在所有脚本之前加载）
+        ══════════════════════════════════════ -->
+   <script src="js/config.js"></script>
 
-  <!-- 主逻辑（须在地图 API 之前加载，以便定义 onTMapCallback） -->
-  <script src="js/main.js"></script>
-
-  <!--
-    天地图 JavaScript API v4.0
-    ★ 必须将下方 YOUR_API_KEY 替换为您在天地图开放平台申请的 TK，否则地图不会加载 ★
-    申请地址：https://lbs.tianditu.gov.cn/
-  -->
-  <script src="https://api.tianditu.gov.cn/api?v=4.0&tk=7403bbf65cbf354d6a9e3574134f9789"></script>
-  <script>
-    (function bootstrapTMap(maxRetry) {
-      if (typeof window.onTMapCallback !== 'function') return;
-      var usingPlaceholderKey = !!document.querySelector('script[src*="tk=YOUR_API_KEY"]');
-      if (usingPlaceholderKey) {
-        console.error('请先在 index.html 中将 YOUR_API_KEY 替换为有效的天地图 TK。');
-        return;
-      }
-      if (typeof window.T !== 'undefined') {
-        window.onTMapCallback();
-        return;
-      }
-      if (maxRetry > 0) {
-        setTimeout(function () { bootstrapTMap(maxRetry - 1); }, 100);
-      }
-    })(30);
+   <!-- ══════════════════════════════════════
+        班级数据文件（根据 CONFIG.classCount 动态加载）
+        ══════════════════════════════════════ -->
+   <script>
+   (function () {
+     var count = (typeof CONFIG !== 'undefined' && CONFIG.classCount) ? CONFIG.classCount : 4;
+     for (var i = 1; i <= count; i++) {
+       document.write('<script src="data/class' + i + '.js"><\/script>');
+     }
+   })();
   </script>
+
+   <!-- 主逻辑（须在地图 API 之前加载，以便定义 onTMapCallback） -->
+   <script src="js/main.js"></script>
+
+   <!--
+     天地图 JavaScript API v4.0（TK 由 js/config.js 提供）
+     申请地址：https://lbs.tianditu.gov.cn/
+   -->
+   <script>
+     (function () {
+       var tk = (typeof CONFIG !== 'undefined' && CONFIG.tiandituTK) ? CONFIG.tiandituTK : '';
+       var s = document.createElement('script');
+       s.src = 'https://api.tianditu.gov.cn/api?v=4.0&tk=' + tk;
+       s.onload = function () {
+         if (typeof window.onTMapCallback === 'function') {
+           window.onTMapCallback();
+         }
+       };
+       s.onerror = function () {
+         var toast = document.getElementById('toast');
+         if (toast) {
+           toast.textContent = '天地图 API 加载失败，请检查网络或稍后重试';
+           toast.classList.add('show');
+         }
+         console.error('天地图 API 加载失败');
+       };
+       document.head.appendChild(s);
+     })();
+   </script>
+   <script>
+     (function bootstrapTMap(maxRetry) {
+       if (typeof window.onTMapCallback !== 'function') return;
+       if (typeof window.T !== 'undefined') {
+         window.onTMapCallback();
+         return;
+       }
+       if (maxRetry > 0) {
+         setTimeout(function () { bootstrapTMap(maxRetry - 1); }, 100);
+       }
+     })(30);
+   </script>
 
 </body>
 </html>

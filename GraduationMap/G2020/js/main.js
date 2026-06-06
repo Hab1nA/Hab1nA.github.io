@@ -3,14 +3,15 @@
  *
  * 依赖：
  *   - 天地图 JavaScript API v4.0（index.html 中加载后调用 onTMapCallback）
- *   - data/class1..4.js（提供 class1Data..class4Data 全局变量）
+ *   - data/class1..N.js（提供 class1Data..classNData 全局变量）
+ *   - js/config.js（提供 CONFIG 全局对象）
  */
 
 /* ─── 全局状态 ─────────────────────────────────────────── */
 let map;
 let geocoder;
 
-/** 已解析过的大学坐标缓存 { "大学名": T.LngLat | null } */
+/** 已解析过的大学坐标缓存 { "大学名": { point: T.LngLat | null, timestamp: number } } */
 const geoCache = {};
 
 /** 当前显示在地图上的标记列表（按当前复选状态整体重算） */
@@ -39,16 +40,16 @@ const isTouchDevice = ('ontouchstart' in window) ||
 /** 当前通过点击地图标记打开的信息窗引用（用于触摸设备点击空白关闭） */
 let activeInfoWindowMarker = null;
 
-/** 各班颜色 */
-const CLASS_COLORS = {
-  1: '#a74bb6', // 紫
-  2: '#10b981', // 绿
-  3: '#f59e0b', // 琥珀
-  4: '#a3292b'  // 红
-};
-const MERGED_MARKER_COLOR = '#9ca3af'; // 多班同校合并标记（灰）
+/** 班级数量（来自 CONFIG） */
+const CLASS_COUNT = (typeof CONFIG !== 'undefined' && CONFIG.classCount) ? CONFIG.classCount : 4;
 
-/** 全班数据引用（在 onTMapCallback 中绑定） */
+/** 各班颜色（来自 CONFIG） */
+const CLASS_COLORS = (typeof CONFIG !== 'undefined' && CONFIG.classColors) ? CONFIG.classColors : {};
+
+/** 多班同校合并标记颜色（来自 CONFIG） */
+const MERGED_MARKER_COLOR = (typeof CONFIG !== 'undefined' && CONFIG.mergedMarkerColor) ? CONFIG.mergedMarkerColor : '#9ca3af';
+
+/** 全班数据引用（在 DOMContentLoaded 中绑定） */
 const ALL_CLASS_DATA = {};
 
 /** 各班缺失数据引用 */
@@ -69,13 +70,11 @@ let searchResultIndex = 0;
 /** 请求版本号：每次 goToSearchResult 调用时递增，用于丢弃过期异步回调 */
 let searchNavRequestId = 0;
 
-/** 院校名称在 Top 列表中的最大显示字符数 */
-const UNI_LABEL_MAX_LEN = 9;
 const TMAP_GEOCODE_SUCCESS = 0;
 
 /** 地理编码连续失败计数器（非"未找到结果"类错误），用于检测配额不足 */
 let consecutiveGeocodeFailures = 0;
-const MAX_CONSECUTIVE_FAILURES = 5;
+const MAX_CONSECUTIVE_FAILURES = (typeof CONFIG !== 'undefined' && CONFIG.maxConsecutiveFailures) ? CONFIG.maxConsecutiveFailures : 5;
 
 /** 是否已报过 API 额度已满（避免重复弹 toast） */
 let quotaExceededNotified = false;
@@ -88,13 +87,13 @@ let geocodeCancelledVersion = 0;
 
 /** 瓦片图片加载失败计数（10 秒窗口内达阈值则判定额度已满） */
 let tileErrorCount = 0;
-let tileErrorThreshold = 8;
+let tileErrorThreshold = (typeof CONFIG !== 'undefined' && CONFIG.tileErrorThreshold) ? CONFIG.tileErrorThreshold : 8;
 let tileErrorWindowTimer = null;
 
 /** 将一个大学名称加入编码队列，结果通过 callback(T.LngLat|null) 返回 */
 function enqueueGeocode(university, city, callback) {
   if (Object.prototype.hasOwnProperty.call(geoCache, university)) {
-    callback(geoCache[university]);
+    callback(geoCache[university].point);
     return;
   }
 
@@ -106,7 +105,6 @@ function enqueueGeocode(university, city, callback) {
     university,
     city,
     callback: function (point) {
-      // 若队列已被强制清空（版本号已变），跳过计数操作以防负数
       if (geocodeCancelledVersion !== capturedVersion) return;
       callback(point);
       pendingGeocodesCount--;
@@ -119,6 +117,24 @@ function enqueueGeocode(university, city, callback) {
   }
 }
 
+/** 查找缓存中最旧的键（基于时间戳） */
+function findOldestCacheKey(cache) {
+  let oldestKey = null;
+  let oldestTimestamp = Infinity;
+  
+  for (const key in cache) {
+    if (Object.prototype.hasOwnProperty.call(cache, key)) {
+      const entry = cache[key];
+      if (entry.timestamp < oldestTimestamp) {
+        oldestTimestamp = entry.timestamp;
+        oldestKey = key;
+      }
+    }
+  }
+  
+  return oldestKey;
+}
+
 /** 逐条执行队列中的地理编码请求（限速 250 ms/次，避免触发 API 限流） */
 function processNextGeocode() {
   if (geocodeQueue.length === 0) {
@@ -129,40 +145,115 @@ function processNextGeocode() {
   geocodingActive = true;
   const item = geocodeQueue.shift();
 
-  // 再次检查缓存（避免重复请求同一大学）
+  if (!geocoder) {
+    item.callback(null);
+    setTimeout(processNextGeocode, 10);
+    return;
+  }
+
   if (Object.prototype.hasOwnProperty.call(geoCache, item.university)) {
-    item.callback(geoCache[item.university]);
+    item.callback(geoCache[item.university].point);
     setTimeout(processNextGeocode, 10);
     return;
   }
 
   const keyword = (item.city ? item.city + '市' : '') + item.university;
-  var completed = false; // 防止回调与超时双重触发
+  var completed = false;
+  const geocodeTimeout = (typeof CONFIG !== 'undefined' && CONFIG.geocodeTimeout) ? CONFIG.geocodeTimeout : 8000;
+  const geocodeInterval = (typeof CONFIG !== 'undefined' && CONFIG.geocodeInterval) ? CONFIG.geocodeInterval : 250;
 
   geocoder.getPoint(keyword, function (result) {
     if (completed) return;
     completed = true;
     console.log('[天地图地理编码]', keyword, '→', result);
     const point = parseGeocodeResult(result);
-    geoCache[item.university] = point; // null 时表示未找到，也缓存，避免重复请求
+    
+    const maxCacheSize = (typeof CONFIG !== 'undefined' && CONFIG.maxGeoCacheSize) ? CONFIG.maxGeoCacheSize : 500;
+    
+    if (Object.keys(geoCache).length >= maxCacheSize) {
+      const oldestKey = findOldestCacheKey(geoCache);
+      if (oldestKey) {
+        delete geoCache[oldestKey];
+      }
+    }
+    
+    geoCache[item.university] = { point: point, timestamp: Date.now() };
     item.callback(point);
-    setTimeout(processNextGeocode, 250);
+    setTimeout(processNextGeocode, geocodeInterval);
   });
 
-  // 超时保护（8 秒）：若天地图 API 因额度已满等原因拒绝请求，回调可能永不触发
   setTimeout(function () {
     if (completed) return;
     completed = true;
-    console.warn('[天地图地理编码] 超时（8s）：', keyword);
-    // 计入连续失败，触发阈值检测
+    console.warn('[天地图地理编码] 超时（' + (geocodeTimeout / 1000) + 's）：', keyword);
     consecutiveGeocodeFailures++;
     if (consecutiveGeocodeFailures >= MAX_CONSECUTIVE_FAILURES) {
       handleSevereFailure();
     }
-    // 不缓存超时结果，允许后续重试
     item.callback(null);
     processNextGeocode();
-  }, 8000);
+  }, geocodeTimeout);
+}
+
+/* ─── 班级面板动态生成 ────────────────────────────────── */
+
+/**
+ * 根据 CONFIG.classCount 和 CONFIG.classColors 动态生成班级复选框面板
+ */
+function buildClassPanel() {
+  const panelBody = document.getElementById('classPanelBody');
+  if (!panelBody) return;
+
+  let html = '';
+  for (let i = 1; i <= CLASS_COUNT; i++) {
+    const color = CLASS_COLORS[i] || '#9ca3af';
+    const className = getClassName(i);
+    html += '<label class="class-item c' + i + '">'
+      + '<input type="checkbox" id="class' + i + '">'
+      + '<span class="class-dot" style="background:' + color + ';border-color:' + color + ';"></span>'
+      + '<span class="class-name">' + className + '</span>'
+      + '<span class="class-count" id="count' + i + '">0人</span>'
+      + '</label>';
+  }
+  panelBody.innerHTML = html;
+}
+
+/** 动态注入班级颜色相关的 CSS 变量及自定义属性 */
+function injectClassColorCSS() {
+  const style = document.getElementById('class-color-style');
+  const cssLines = [];
+
+  for (let i = 1; i <= CLASS_COUNT; i++) {
+    const color = CLASS_COLORS[i] || '#9ca3af';
+    cssLines.push('  --class-' + i + '-color: ' + color + ';');
+  }
+
+  if (cssLines.length > 0) {
+    let css = ':root {\n' + cssLines.join('\n') + '\n}\n';
+
+    for (let i = 1; i <= CLASS_COUNT; i++) {
+      css += '\n';
+      css += '.class-item.c' + i + ' .class-dot {\n';
+      css += '  background: var(--class-' + i + '-color) !important;\n';
+      css += '  border-color: var(--class-' + i + '-color) !important;\n';
+      css += '}\n';
+    }
+
+    for (let i = 1; i <= CLASS_COUNT; i++) {
+      css += '.text-class' + i + ' { color: var(--class-' + i + '-color) !important; }\n';
+      css += '.border-class' + i + ' { border-color: var(--class-' + i + '-color) !important; }\n';
+      css += '.bg-class' + i + ' { background-color: var(--class-' + i + '-color) !important; }\n';
+    }
+
+    if (style) {
+      style.textContent = css;
+    } else {
+      const newStyle = document.createElement('style');
+      newStyle.id = 'class-color-style';
+      newStyle.textContent = css;
+      document.head.appendChild(newStyle);
+    }
+  }
 }
 
 /* ─── 口令验证 ────────────────────────────────────────────── */
@@ -173,15 +264,19 @@ function processNextGeocode() {
  * @returns {Promise<string>} 十六进制哈希字符串
  */
 function sha256Hex(input) {
-  var encoder = new TextEncoder();
-  var data = encoder.encode(input);
-  return crypto.subtle.digest('SHA-256', data).then(function (hashBuffer) {
-    var hashArray = Array.from(new Uint8Array(hashBuffer));
-    var hashHex = hashArray.map(function (b) {
-      return b.toString(16).padStart(2, '0');
-    }).join('');
-    return hashHex;
-  });
+  try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(input);
+    return crypto.subtle.digest('SHA-256', data).then(function (hashBuffer) {
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(function (b) {
+        return b.toString(16).padStart(2, '0');
+      }).join('');
+      return hashHex;
+    });
+  } catch (e) {
+    return Promise.reject(e);
+  }
 }
 
 /**
@@ -191,28 +286,27 @@ function sha256Hex(input) {
  * ★ 代码中不包含任何口令原文，仅存储 SHA-256 哈希值。
  */
 function initPasswordGate() {
-  // 合法口令的 SHA-256 哈希（口令原文不会出现在代码中）
-  var validHashes = [
-    '61709488ccbe179a5e67f0e9743cfc3873738f77c44efb944cdd1664c99e17b3',
-    '547971b416fcc76c0e08c153b12eff69ff5807c60271fe27187b95a359d6b396',
-    '8fc5700a1439de46364bcb4ad2720479852cf8ed29769bcd588d20d52a34dc9a'
-  ];
+  // 合法口令的 SHA-256 哈希（从 CONFIG 读取，口令原文不会出现在代码中）
+  const validHashes = (typeof CONFIG !== 'undefined' && CONFIG.validPasswordHashes) ? CONFIG.validPasswordHashes : [];
 
-  var gate = document.getElementById('passwordGate');
-  var input = document.getElementById('passwordInput');
-  var submitBtn = document.getElementById('passwordSubmit');
-  var errorEl = document.getElementById('passwordError');
+  const promptEl = document.getElementById('passwordPrompt');
+  if (promptEl) {
+    const promptText = (typeof CONFIG !== 'undefined' && CONFIG.passwordPrompt) ? CONFIG.passwordPrompt : '这是哪所学校？';
+    promptEl.textContent = promptText;
+  }
 
-  /**
-   * 验证口令
-   */
+  const gate = document.getElementById('passwordGate');
+  const input = document.getElementById('passwordInput');
+  const submitBtn = document.getElementById('passwordSubmit');
+  const errorEl = document.getElementById('passwordError');
+
   function verify() {
-    var raw = input.value.trim();
+    const raw = input.value.trim();
     if (!raw) return;
 
     sha256Hex(raw).then(function (hash) {
-      var match = false;
-      for (var i = 0; i < validHashes.length; i++) {
+      let match = false;
+      for (let i = 0; i < validHashes.length; i++) {
         if (hash === validHashes[i]) {
           match = true;
           break;
@@ -220,16 +314,13 @@ function initPasswordGate() {
       }
 
       if (match) {
-        // 验证通过
         document.querySelector('.header').classList.add('reveal');
         document.querySelector('.class-panel').classList.add('reveal');
         gate.classList.add('dismiss');
-        // 动画完成后移除 DOM
         setTimeout(function () {
           gate.style.display = 'none';
         }, 450);
       } else {
-        // 口令错误
         errorEl.textContent = '名称错误，请重试';
         input.classList.add('shake');
         input.value = '';
@@ -238,6 +329,8 @@ function initPasswordGate() {
           input.classList.remove('shake');
         }, 400);
       }
+    }).catch(function () {
+      errorEl.textContent = '验证失败，请检查浏览器安全设置';
     });
   }
 
@@ -247,30 +340,61 @@ function initPasswordGate() {
   });
 }
 
-/* ─── DOM 就绪后立即初始化（无需等待地图 API） ───────────── */
+function setupBrandTitle() {
+  const titleEl = document.getElementById('brandTitle');
+  const titleText = (typeof CONFIG !== 'undefined' && CONFIG.pageTitle) ? CONFIG.pageTitle : '蹭饭图';
+  if (titleEl) {
+    titleEl.textContent = titleText;
+  }
+  document.title = titleText;
+}
+
+function buildAboutContent() {
+  const rangeEl = document.getElementById('aboutClassRange');
+  const colorsEl = document.getElementById('aboutClassColors');
+  const dataFilesEl = document.getElementById('aboutDataFiles');
+  if (!rangeEl && !colorsEl && !dataFilesEl) return;
+
+  if (rangeEl) {
+    rangeEl.textContent = '1–' + CLASS_COUNT;
+  }
+
+  if (colorsEl) {
+    const colorNameMap = (typeof CONFIG !== 'undefined' && CONFIG.colorNameMap) ? CONFIG.colorNameMap : {};
+    const parts = [];
+    for (let i = 1; i <= CLASS_COUNT; i++) {
+      const color = CLASS_COLORS[i] || '#9ca3af';
+      const colorName = colorNameMap[color.toLowerCase()] || color;
+      const displayName = getClassName(i);
+      parts.push(displayName + ' ' + colorName);
+    }
+    colorsEl.textContent = parts.join('、');
+  }
+
+  if (dataFilesEl) {
+    dataFilesEl.innerHTML = '<code>data/class1.js</code> ~ <code>data/class' + CLASS_COUNT + '.js</code>';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
-  /* ─── 口令验证 ──────────────────────────────────────────── */
+  buildClassPanel();
+  injectClassColorCSS();
+
+  setupBrandTitle();
+
+  buildAboutContent();
+
   initPasswordGate();
 
-  // 绑定数据（供人数显示与统计使用）
-  ALL_CLASS_DATA[1] = typeof class1Data !== 'undefined' ? class1Data : [];
-  ALL_CLASS_DATA[2] = typeof class2Data !== 'undefined' ? class2Data : [];
-  ALL_CLASS_DATA[3] = typeof class3Data !== 'undefined' ? class3Data : [];
-  ALL_CLASS_DATA[4] = typeof class4Data !== 'undefined' ? class4Data : [];
+  for (let ci = 1; ci <= CLASS_COUNT; ci++) {
+    ALL_CLASS_DATA[ci] = (typeof window['class' + ci + 'Data'] !== 'undefined') ? window['class' + ci + 'Data'] : [];
+    ALL_MISSING_DATA[ci] = (typeof window['class' + ci + 'MissingData'] !== 'undefined') ? window['class' + ci + 'MissingData'] : [];
+  }
 
-  // 绑定缺失数据
-  ALL_MISSING_DATA[1] = typeof class1MissingData !== 'undefined' ? class1MissingData : [];
-  ALL_MISSING_DATA[2] = typeof class2MissingData !== 'undefined' ? class2MissingData : [];
-  ALL_MISSING_DATA[3] = typeof class3MissingData !== 'undefined' ? class3MissingData : [];
-  ALL_MISSING_DATA[4] = typeof class4MissingData !== 'undefined' ? class4MissingData : [];
-
-  // 人数徽标
   updateCountBadges();
 
-  // 初始化"数据缺失"面板相对"班级筛选"面板的位置
   positionMissingPanel();
 
-  // 关于 / 数据统计按钮（不依赖地图）
   document.getElementById('aboutBtn').addEventListener('click', function () {
     openModal('aboutModal');
   });
@@ -279,7 +403,6 @@ document.addEventListener('DOMContentLoaded', function () {
     openModal('statsModal');
   });
 
-  // 数据缺失栏目点击
   document.getElementById('missingDataToggle').addEventListener('click', function () {
     var selected = getSelectedClasses();
     if (selected.length === 0) return;
@@ -287,21 +410,18 @@ document.addEventListener('DOMContentLoaded', function () {
     openModal('missingDataModal');
   });
 
-  // 关闭按钮
   document.querySelectorAll('.modal-close').forEach(function (btn) {
     btn.addEventListener('click', function () {
       closeModal(this.dataset.modal);
     });
   });
 
-  // 点击遮罩关闭
   document.querySelectorAll('.modal').forEach(function (modal) {
     modal.addEventListener('click', function (e) {
       if (e.target === this) closeModal(this.id);
     });
   });
 
-  // ESC 键关闭
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       document.querySelectorAll('.modal.show').forEach(function (m) {
@@ -310,19 +430,23 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // 窗口大小变化时重新计算"数据缺失"面板位置
   window.addEventListener('resize', function () {
     positionMissingPanel();
   });
 });
 
 /* ─── 地图初始化（天地图 API 回调） ──────────────────────── */
+let tmapInitialized = false;
+
 window.onTMapCallback = function () {
-  // 卫星影像底图
-  var satelliteUrl = "http://t0.tianditu.gov.cn/img_w/wmts?"
+  if (tmapInitialized) return;
+  tmapInitialized = true;
+  // 卫星影像底图—— TK 从 CONFIG 获取
+  var tk = (typeof CONFIG !== 'undefined' && CONFIG.tiandituTK) ? CONFIG.tiandituTK : '';
+  var satelliteUrl = "https://t0.tianditu.gov.cn/img_w/wmts?"
     + "SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=img&STYLE=default"
     + "&TILEMATRIXSET=w&FORMAT=tiles"
-    + "&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=7403bbf65cbf354d6a9e3574134f9789";
+    + "&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=" + tk;
   var satelliteLayer = new T.TileLayer(satelliteUrl, { minZoom: 1, maxZoom: 18 });
   map = new T.Map('map-container', { layers: [satelliteLayer] });
 
@@ -343,9 +467,6 @@ window.onTMapCallback = function () {
   // 绑定地图相关的 UI 事件
   setupMapEventListeners();
 
-  // ─── 地图瓦片加载失败监听 ────────────────────────────
-  // 天地图瓦片通过 <img> 加载，域名含 tianditu.gov.cn
-  // 若短时间内大量瓦片加载失败，判定额度已满
   document.addEventListener('error', function (e) {
     var el = e.target;
     if (!el || el.tagName !== 'IMG') return;
@@ -355,7 +476,6 @@ window.onTMapCallback = function () {
     tileErrorCount++;
     console.warn('[天地图瓦片] 加载失败 (' + tileErrorCount + '/' + tileErrorThreshold + '):', src.substring(0, 100));
 
-    // 首次失败启动 10 秒重置窗口
     if (!tileErrorWindowTimer) {
       tileErrorWindowTimer = setTimeout(function () {
         tileErrorCount = 0;
@@ -365,7 +485,6 @@ window.onTMapCallback = function () {
 
     if (tileErrorCount >= tileErrorThreshold) {
       handleQuotaExceeded();
-      // 达到阈值后停止计数，避免重复触发
       tileErrorCount = 0;
       if (tileErrorWindowTimer) {
         clearTimeout(tileErrorWindowTimer);
@@ -377,22 +496,23 @@ window.onTMapCallback = function () {
 
 /* ─── 地图相关 UI 初始化（地图 API 就绪后调用） ──────────── */
 function setupMapEventListeners() {
-  // 班级复选框 → 显示/隐藏标记 + 更新数据缺失栏目
-  for (let i = 1; i <= 4; i++) {
-    document.getElementById('class' + i).addEventListener('change', function () {
-      renderSelectedMarkers();
-      updateTotalCount();
-      updateMissingDataToggle();
-    });
+  // 班级复选框 → 显示/隐藏标记 + 更新数据缺失栏目（动态绑定）
+  for (let i = 1; i <= CLASS_COUNT; i++) {
+    const cb = document.getElementById('class' + i);
+    if (cb) {
+      cb.addEventListener('change', function () {
+        renderSelectedMarkers();
+        updateTotalCount();
+        updateMissingDataToggle();
+      });
+    }
   }
 
-  // 搜索框
   document.getElementById('searchBtn').addEventListener('click', performSearch);
   document.getElementById('searchInput').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') performSearch();
   });
 
-  // 搜索结果导航条
   document.getElementById('searchNavPrev').addEventListener('click', function () {
     if (searchResultIndex > 0) {
       searchResultIndex--;
@@ -407,11 +527,8 @@ function setupMapEventListeners() {
   });
   document.getElementById('searchNavClose').addEventListener('click', hideSearchNav);
 
-  // ─── 触摸设备：点击地图空白处关闭信息窗 ────────────
   if (isTouchDevice) {
     map.addEventListener('click', function (e) {
-      // marker 的 click 事件会先触发并设置 activeInfoWindowMarker
-      // 此处用 setTimeout 确保在 marker click 之后执行
       setTimeout(function () {
         if (activeInfoWindowMarker) {
           activeInfoWindowMarker.closeInfoWindow();
@@ -427,8 +544,9 @@ function setupMapEventListeners() {
 /** 获取当前勾选的班级列表 */
 function getSelectedClasses() {
   const selected = [];
-  for (let i = 1; i <= 4; i++) {
-    if (document.getElementById('class' + i).checked) selected.push(i);
+  for (var i = 1; i <= CLASS_COUNT; i++) {
+    var cb = document.getElementById('class' + i);
+    if (cb && cb.checked) selected.push(i);
   }
   return selected;
 }
@@ -441,6 +559,7 @@ function groupSelectedByUniversity(selectedClasses) {
   const groups = {};
   selectedClasses.forEach(function (classNum) {
     (ALL_CLASS_DATA[classNum] || []).forEach(function (student) {
+      if (!student.university) return;
       if (!groups[student.university]) {
         groups[student.university] = {
           university: student.university,
@@ -536,16 +655,11 @@ function addMarkerToMap(point, group) {
   activeMarkers.push(marker);
   activeMarkerByUniversity[group.university] = marker;
 
-  // 若搜索临时标记恰好属于同一大学，则移除它（正式标记已覆盖）
   if (searchPinnedMarker && searchPinnedMarker.__university === group.university) {
     clearSearchPinnedMarker();
   }
 }
 
-/**
- * 创建并配置一个地图标记（含悬停/点击信息窗）。
- * 不负责添加到地图或管理任何全局状态。
- */
 function createMarker(point, group, color, merged) {
   const icon = new T.Icon({
     iconUrl: createPinIcon(color),
@@ -563,7 +677,6 @@ function createMarker(point, group, color, merged) {
   marker.__infoWindow = infoWindow;
 
   if (!isTouchDevice) {
-    // 桌面端：悬停预览 + 点击打开信息窗
     marker.addEventListener('mouseover', function () { marker.openInfoWindow(hoverInfoWindow); });
     marker.addEventListener('mouseout',  function () { marker.closeInfoWindow(); });
   }
@@ -586,10 +699,11 @@ function buildInfoWindowHTML(group, color, merged) {
     const studentItems = students.map(function (name) {
       return '<li style="padding:3px 0;font-size:13px;color:#1e293b;">&#8226; ' + escapeHTML(name) + '</li>';
     }).join('');
+      const classDisplayName = getClassName(classNum);
     return '<div style="margin-top:10px;">'
       + '<div style="display:inline-flex;align-items:center;gap:6px;background:' + classColor + '1f;border:1px solid ' + classColor + '55;border-radius:999px;padding:2px 10px;">'
       + '<span style="width:7px;height:7px;border-radius:50%;background:' + classColor + ';"></span>'
-      + '<span style="font-size:12px;font-weight:700;color:#334155;">' + classNum + '班</span>'
+      + '<span style="font-size:12px;font-weight:700;color:#334155;">' + classDisplayName + '</span>'
       + '<span style="font-size:11px;color:#64748b;">' + students.length + '人</span>'
       + '</div>'
       + '<ul style="list-style:none;padding:6px 0 0 0;margin:0;">' + studentItems + '</ul>'
@@ -597,14 +711,15 @@ function buildInfoWindowHTML(group, color, merged) {
   }).join('');
   const safeUniversity = escapeHTML(group.university);
   const safeCity = escapeHTML(group.city);
-  const classBadgeText = merged ? '多班<br>合并' : (group.classNums[0] + '班');
+  const classBadgeIcon = getClassName(group.classNums[0]);
+  const classBadgeText = merged ? '多班<br>合并' : classBadgeIcon;
 
   var infoMinWidth = window.innerWidth <= 480 ? '240px' : '300px';
   return '<div style="font-family:-apple-system,BlinkMacSystemFont,\'PingFang SC\',\'Microsoft YaHei\',sans-serif;min-width:' + infoMinWidth + ';border-radius:8px;overflow:hidden;">'
     + '<div style="background:' + color + ';padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:0;">'
     + '<span style="background:rgba(255,255,255,0.25);padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;color:white;flex-shrink:0;white-space:nowrap;">' + classBadgeText + '</span>'
     + (group.university.length > 15
-        ? '<marquee style="font-size:14px;font-weight:700;color:white;width:100%;" scrollamount="3">' + safeUniversity + '</marquee>'
+        ? '<div class="marquee-wrap"><span class="marquee-inner" style="font-size:14px;font-weight:700;color:white;">' + safeUniversity + '</span></div>'
         : '<span style="font-size:14px;font-weight:700;color:white;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">' + safeUniversity + '</span>')
     + '</div>'
     + '<div style="padding:12px 14px;background:white;">'
@@ -644,7 +759,7 @@ function performSearch() {
 function findStudentMatchesByName(query) {
   const q = query.toLowerCase();
   const matches = [];
-  for (let i = 1; i <= 4; i++) {
+  for (var i = 1; i <= CLASS_COUNT; i++) {
     (ALL_CLASS_DATA[i] || []).forEach(function (student) {
       if ((student.name || '').toLowerCase().indexOf(q) !== -1) {
         matches.push({
@@ -663,7 +778,7 @@ function findStudentMatchesByName(query) {
 function findUniversityMatches(query) {
   const q = query.toLowerCase();
   const groups = {};
-  for (let i = 1; i <= 4; i++) {
+  for (var i = 1; i <= CLASS_COUNT; i++) {
     (ALL_CLASS_DATA[i] || []).forEach(function (student) {
       if ((student.university || '').toLowerCase().indexOf(q) !== -1) {
         if (!groups[student.university]) {
@@ -717,7 +832,8 @@ function focusOnStudentMatch(query, matches) {
   if (matches.length > 1) {
     showSearchNav();
   } else {
-    showToast('已定位：' + matches[0].name + '（' + matches[0].classNum + '班 · ' + matches[0].university + '）');
+      var studentDisplayName = getClassName(matches[0].classNum);
+    showToast('已定位：' + matches[0].name + '（' + studentDisplayName + ' · ' + matches[0].university + '）');
   }
 }
 
@@ -737,7 +853,9 @@ function focusOnUniversityMatch(query, matches) {
     showSearchNav();
   } else {
     const m = searchResults[0];
-    const classStr = m.classNums.map(function (c) { return c + '班'; }).join('·');
+    const classStr = m.classNums.map(function (c) {
+      return getClassName(c);
+    }).join('·');
     showToast('已定位：' + m.university + '（' + classStr + '·共' + m.totalStudents + '人）');
   }
 }
@@ -927,8 +1045,7 @@ function showSearchNav() {
  * 隐藏并清空搜索结果导航条。
  * 默认会同时移除搜索定位时的临时标记；传入 false 时仅隐藏/重置导航，不清除临时标记。
  */
-function hideSearchNav(clearPinnedMarker) {
-  if (clearPinnedMarker === undefined) clearPinnedMarker = true;
+function hideSearchNav(clearPinnedMarker = true) {
   searchResults = [];
   searchResultIndex = 0;
   searchNavRequestId++;  // 使任何仍在飞行中的地理编码回调失效
@@ -940,11 +1057,11 @@ function hideSearchNav(clearPinnedMarker) {
 
 /** 移除搜索定位时临时添加的标记，并恢复被临时替换信息窗的已有标记 */
 function clearSearchPinnedMarker() {
-     if (searchPinnedMarker) {
-      searchPinnedMarker.closeInfoWindow();
-      removeMapOverlay(searchPinnedMarker);
-      searchPinnedMarker = null;
-    }
+  if (searchPinnedMarker) {
+    searchPinnedMarker.closeInfoWindow();
+    removeMapOverlay(searchPinnedMarker);
+    searchPinnedMarker = null;
+  }
 
   // 恢复被搜索临时替换了信息窗的已有标记，并关闭其当前信息窗
   if (patchedExistingMarker) {
@@ -969,14 +1086,17 @@ function updateSearchNavInfo() {
 
   var labelHTML;
   if (target.type === 'university') {
-    var classStr = target.classNums.map(function (c) { return c + '班'; }).join('·');
+    var classStr = target.classNums.map(function (c) {
+      return getClassName(c);
+    }).join('·');
     labelHTML =
       escapeHTML(target.university)
       + '（' + classStr + '·共' + target.totalStudents + '人）';
   } else {
+    var navStudentDisplayName = getClassName(target.classNum);
     labelHTML =
       escapeHTML(target.name)
-      + '（' + target.classNum + '班&middot;' + escapeHTML(target.university) + '）';
+      + '（' + navStudentDisplayName + '&middot;' + escapeHTML(target.university) + '）';
   }
 
   navInfo.innerHTML =
@@ -1047,6 +1167,7 @@ function buildMissingDataContent(selectedClasses) {
     var classNum = selectedClasses[i];
     var classColor = CLASS_COLORS[classNum];
     var missingList = ALL_MISSING_DATA[classNum] || [];
+      var classDisplayName = getClassName(classNum);
 
     totalMissing += missingList.length;
 
@@ -1055,7 +1176,7 @@ function buildMissingDataContent(selectedClasses) {
         '<div class="missing-data-section">'
         + '<span class="missing-data-class-title">'
         + '<span class="missing-data-class-dot" style="background:' + classColor + ';"></span>'
-        + classNum + '班 · 共0人'
+        + classDisplayName + ' · 共0人'
         + '</span>'
         + '<p style="font-size:13px;color:#94a3b8;padding-left:8px;">该班暂无缺失数据 ✨</p>'
         + '</div>';
@@ -1068,7 +1189,7 @@ function buildMissingDataContent(selectedClasses) {
         '<div class="missing-data-section">'
         + '<span class="missing-data-class-title">'
         + '<span class="missing-data-class-dot" style="background:' + classColor + ';"></span>'
-        + classNum + '班 · 共' + missingList.length + '人'
+        + classDisplayName + ' · 共' + missingList.length + '人'
         + '</span>'
         + '<ul class="missing-data-list">' + nameItems + '</ul>'
         + '</div>';
@@ -1089,15 +1210,19 @@ function buildStatsContent() {
   let totalAll = 0;
   const classCounts = {};
 
-  for (let i = 1; i <= 4; i++) {
+  for (var i = 1; i <= CLASS_COUNT; i++) {
     const data = ALL_CLASS_DATA[i] || [];
     const missingData = ALL_MISSING_DATA[i] || [];
     classCounts[i] = data.length + missingData.length;
     totalAll += data.length + missingData.length;
     data.forEach(function (s) {
-      cityCounts[s.city] = (cityCounts[s.city] || 0) + 1;
+      if (s.city) {
+        cityCounts[s.city] = (cityCounts[s.city] || 0) + 1;
+      }
       var baseName = getUniversityBaseName(s.university);
-      uniCounts[baseName] = (uniCounts[baseName] || 0) + 1;
+      if (baseName) {
+        uniCounts[baseName] = (uniCounts[baseName] || 0) + 1;
+      }
     });
   }
 
@@ -1106,14 +1231,16 @@ function buildStatsContent() {
   const maxCity = topCities.length ? topCities[0][1] : 1;
   const maxUni  = topUnis.length ? topUnis[0][1] : 1;
 
-  const badgesHTML = [1, 2, 3, 4].map(function (i) {
-    const c = CLASS_COLORS[i];
-    return '<div class="stats-badge" style="background:' + c + '1a;border:2px solid ' + c + ';">'
+  var badgesHTML = '';
+  for (var ci = 1; ci <= CLASS_COUNT; ci++) {
+    const c = CLASS_COLORS[ci];
+      var statsDisplayName = getClassName(ci);
+    badgesHTML += '<div class="stats-badge" style="background:' + c + '1a;border:2px solid ' + c + ';">'
       + '<span class="badge-dot" style="background:' + c + ';"></span>'
-      + '<span>' + i + '班</span>'
-      + '<strong>' + classCounts[i] + '人</strong>'
+      + '<span>' + statsDisplayName + '</span>'
+      + '<strong>' + (classCounts[ci] || 0) + '人</strong>'
       + '</div>';
-  }).join('');
+  }
 
   const cityBarsHTML = topCities.map(function (entry) {
     const cityName = escapeHTML(entry[0]);
@@ -1130,7 +1257,7 @@ function buildStatsContent() {
     const safeUniName = escapeHTML(uniName);
     var labelHTML;
     if (uniName.length > 6) {
-      labelHTML = '<span class="bar-label" style="overflow:visible;"><marquee behavior="scroll" direction="left" scrollamount="2" loop="-1" style="width:88px;" title="' + safeUniName + '">' + safeUniName + '</marquee></span>';
+      labelHTML = '<span class="bar-label" style="overflow:visible;"><div class="marquee-wrap" style="width:88px;" title="' + safeUniName + '"><span class="marquee-inner">' + safeUniName + '</span></div></span>';
     } else {
       labelHTML = '<span class="bar-label" title="' + safeUniName + '">' + safeUniName + '</span>';
     }
@@ -1154,8 +1281,15 @@ function buildStatsContent() {
 }
 
 /* ─── 辅助函数 ───────────────────────────────────────────── */
+
+function getClassName(classNum) {
+  return (typeof CONFIG !== 'undefined' && CONFIG.classNames && CONFIG.classNames[classNum])
+    ? CONFIG.classNames[classNum]
+    : (classNum + '班');
+}
+
 function updateCountBadges() {
-  for (let i = 1; i <= 4; i++) {
+  for (var i = 1; i <= CLASS_COUNT; i++) {
     const el = document.getElementById('count' + i);
     if (el) {
       const classCount = ALL_CLASS_DATA[i] ? ALL_CLASS_DATA[i].length : 0;
@@ -1167,8 +1301,9 @@ function updateCountBadges() {
 
 function updateTotalCount() {
   let total = 0;
-  for (let i = 1; i <= 4; i++) {
-    if (document.getElementById('class' + i).checked) {
+  for (var i = 1; i <= CLASS_COUNT; i++) {
+    var cb = document.getElementById('class' + i);
+    if (cb && cb.checked) {
       const classCount = ALL_CLASS_DATA[i] ? ALL_CLASS_DATA[i].length : 0;
       const missingCount = ALL_MISSING_DATA[i] ? ALL_MISSING_DATA[i].length : 0;
       total += classCount + missingCount;
@@ -1196,8 +1331,6 @@ function parseGeocodeResult(result) {
     return new T.LngLat(result.lng, result.lat);
   }
 
-  // 检测错误状态码（天地图实际只返回 status=1 表示服务异常，无 311/301 等细分码）
-  // 额度已满时 status !== 0，累积失败计数，达阈值则触发 handleSevereFailure
   if (hasStatusMethod) {
     var status = result.getStatus();
     if (status !== TMAP_GEOCODE_SUCCESS) {
@@ -1216,11 +1349,8 @@ function parseGeocodeResult(result) {
   return null;
 }
 
-/** 处理天地图 API 当日配额已满 */
 function handleQuotaExceeded() {
-  // 递增取消版本号，使所有在途回调失效，避免 pendingGeocodesCount 变负
   geocodeCancelledVersion++;
-  // 清空等待队列
   geocodeQueue.length = 0;
   geocodingActive = false;
   pendingGeocodesCount = 0;
@@ -1320,10 +1450,10 @@ function getUniversityBaseName(university) {
 
 function escapeHTML(text) {
   return String(text == null ? '' : text)
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>')
-    .replace(/"/g, '"')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
 
@@ -1339,7 +1469,8 @@ function positionMissingPanel() {
 
   var classPanelStyle = window.getComputedStyle(classPanel);
   var classPanelHeight = classPanel.offsetHeight;
-  var classPanelBottom = parseFloat(classPanelStyle.bottom) || 36;
+  var classPanelBottom = parseFloat(classPanelStyle.bottom);
+  if (!Number.isFinite(classPanelBottom)) classPanelBottom = 36;
 
   // 班级筛选面板顶部在视口中的 y 坐标 = 视口高度 - bottom - height
   var classPanelTop = window.innerHeight - classPanelBottom - classPanelHeight;

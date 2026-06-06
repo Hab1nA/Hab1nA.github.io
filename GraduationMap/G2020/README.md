@@ -235,12 +235,9 @@ const class1MissingData = [
 
 ### 2. 替换密钥
 
-编辑 `index.html`，将两处 `tk=7403bbf65cbf354d6a9e3574134f9789` 替换为你的 TK：
+编辑 `js/config.js`，将 `CONFIG.tiandituTK` 的值替换为你的 TK：
 
-- **第 296 行**：天地图 API 脚本引用中的 `tk` 参数。
-- **第 325 行**（`js/main.js` 中地图初始化函数 `onTMapCallback` 里）：卫星影像 WMTS 瓦片 URL 中的 `tk` 参数。
-
-> ⚠️ **重要**：必须同时替换这两处，否则地图瓦片或地理编码服务将不可用。
+- **`js/config.js` 的 `CONFIG.tiandituTK`**：天地图 API 脚本与卫星影像 WMTS 瓦片都会从这里读取 TK。
 
 ### 3. 管理口令
 
@@ -251,7 +248,7 @@ const class1MissingData = [
      .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join(''))
      .then(console.log);
    ```
-2. 将得到的 64 位十六进制哈希值添加到 `js/main.js` 的 `validHashes` 数组中（第 196 行附近）。
+2. 将得到的 64 位十六进制哈希值添加到 `js/config.js` 的 `CONFIG.validPasswordHashes` 数组中。
 3. 可同时存放多个合法口令的哈希值。
 
 ### 4. 更新班级数据
