@@ -103,7 +103,7 @@ var class2Data = [
   },
   {
     "name": "郭贝妮",
-    "university": "华东师范大学",
+    "university": "华东师范大学（闵行校区）",
     "city": "上海"
   },
   {
@@ -167,11 +167,15 @@ var class2Data = [
     "name": "秦杰",
     "university": "上海交通大学（闵行校区）",
     "city": "上海"
+  },
+  {
+    "name": "李涵熙",
+    "university": "华东师范大学（闵行校区）",
+    "city": "上海"
   }
 ];
 
 var class2MissingData = [
   { "name": "张语乐" },
-  { "name": "马梓源" },
-  { "name": "李涵熙" }
+  { "name": "马梓源" }
 ];

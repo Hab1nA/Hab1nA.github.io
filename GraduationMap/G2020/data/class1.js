@@ -136,8 +136,8 @@ var class1Data = [
   },
   {
     "name": "青哮添",
-    "university": "哈尔滨工业大学（威海）",
-    "city": "威海"
+    "university": "中南大学",
+    "city": "长沙"
   },
   {
     "name": "李语心",
