@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>液体火箭发动机设计 - 完整复习资料</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9A%80%3C/text%3E%3C/svg%3E">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -70,6 +71,12 @@
             font-size: 20px;
             font-weight: 600;
             letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .header-actions {
@@ -157,6 +164,10 @@
             transition: transform 0.3s ease;
         }
 
+        body.sidebar-collapsed .sidebar {
+            transform: translateX(-100%);
+        }
+
         .sidebar::-webkit-scrollbar {
             width: 6px;
         }
@@ -233,6 +244,11 @@
             padding: 32px 48px 80px;
             max-width: 900px;
             min-height: calc(100vh - var(--header-height) - var(--tabs-height));
+            transition: margin-left 0.3s ease;
+        }
+
+        body.sidebar-collapsed .main-content {
+            margin-left: 0;
         }
 
         /* ===== Typography ===== */
@@ -510,6 +526,14 @@
 
         /* ===== Responsive ===== */
         @media (max-width: 1024px) {
+            body.sidebar-collapsed .sidebar {
+                transform: translateX(-100%);
+            }
+
+            body.sidebar-collapsed .main-content {
+                margin-left: 0;
+            }
+
             .sidebar {
                 transform: translateX(-100%);
             }
@@ -736,7 +760,7 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <h1 id="chapter-1">液体火箭发动机设计 -- 完整复习资料</h1>
+        <h1 id="chapter-1">液体火箭发动机设计 - 完整复习资料</h1>
 <blockquote class="note-box"><p>基于教材内容，通过检索增强生成（RAG）方法整理</p><p>共覆盖第二章至第六章，48个问题，含相关教材图片</p><p>图片来源：OCR教材原文</p></blockquote>
 <hr>
 <h2 class="toc-title">目录</h2>
@@ -5879,7 +5903,12 @@ $$</div>
     // Sidebar toggle (mobile)
     function toggleSidebar() {
         var sidebar = document.getElementById('sidebar');
-        sidebar.classList.toggle('open');
+        if (window.innerWidth <= 1024) {
+            sidebar.classList.toggle('open');
+            return;
+        }
+
+        document.body.classList.toggle('sidebar-collapsed');
     }
 
     // Close sidebar on link click (mobile)
