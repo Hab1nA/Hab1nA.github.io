@@ -16,6 +16,9 @@ projects in this repository.
 
 ## Projects
 
+- [AI Usage Dashboard](./AIUsageDashboard/) - unified dashboard to monitor AI
+  API usage across multiple providers (DeepSeek, Mimo, Volcengine, ChatGPT,
+  Packycode) with extensible provider architecture.
 - [Graduation Map](./GraduationMap/G2020/) - an interactive page for graduation
   memories and shared locations.
 - [Rocket Engine Design Review](./RocketEngineDesignReview/) - course material
@@ -26,6 +29,22 @@ projects in this repository.
 ```text
 .
 |-- index.html
+|-- AIUsageDashboard/
+|   |-- index.html
+|   |-- main.js
+|   |-- provider-registry.js
+|   |-- provider-base.js
+|   |-- config.js
+|   |-- ui.js
+|   |-- test-utils.js
+|   |-- providers/
+|   |   |-- deepseek.js
+|   |   |-- mimo.js
+|   |   |-- volcengine.js
+|   |   |-- chatgpt.js
+|   |   `-- packycode.js
+|   `-- docs/
+|       `-- interface.md
 |-- GraduationMap/
 |   `-- G2020/
 |-- RocketEngineDesignReview/

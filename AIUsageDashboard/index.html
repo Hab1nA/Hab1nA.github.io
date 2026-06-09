@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI 用量面板 | 谢凯舟</title>
+  <meta name="description" content="统一查看多个平台 AI API 用量的面板。">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --surface: #ffffff;
+      --text: #17202a;
+      --muted: #5d6978;
+      --line: #d9e1ea;
+      --accent: #0f766e;
+      --accent-strong: #115e59;
+      --shadow: 0 18px 45px rgba(23, 32, 42, 0.08);
+      --error: #dc2626;
+      --success: #16a34a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(14, 165, 233, 0.05) 42%, transparent 42%),
+        var(--bg);
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .page {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 44px 0;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      color: var(--accent-strong);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 16px;
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .btn-primary {
+      color: #ffffff;
+      background: var(--accent);
+    }
+
+    .btn-secondary {
+      color: var(--accent);
+      background: transparent;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    /* Usage Table */
+    .usage-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    .usage-table th,
+    .usage-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .usage-table th {
+      background: rgba(15, 118, 110, 0.04);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .usage-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .usage-table tr:hover {
+      background: rgba(15, 118, 110, 0.02);
+    }
+
+    .provider-name {
+      font-weight: 600;
+    }
+
+    .tokens {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cost {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status {
+      font-size: 0.85rem;
+    }
+
+    .status.success {
+      color: var(--success);
+    }
+
+    .status.error {
+      color: var(--error);
+    }
+
+    /* Status Message */
+    #status-message {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    /* Loading State */
+    .loading-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px;
+      color: var(--muted);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--line);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Error State */
+    .error-state {
+      padding: 24px;
+      text-align: center;
+      color: var(--error);
+    }
+
+    /* Empty State */
+    .empty-state {
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 80px;
+    }
+
+    .modal-content {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 32px;
+      width: min(600px, calc(100% - 40px));
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-content h2 {
+      margin: 0 0 24px;
+      font-size: 1.3rem;
+    }
+
+    .provider-section {
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .provider-section:last-of-type {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .provider-section h3 {
+      margin: 0 0 16px;
+      font-size: 1rem;
+      color: var(--accent-strong);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 0.95rem;
+      transition: border-color 160ms ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      justify-content: flex-end;
+    }
+
+    /* Back Link */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+      }
+
+      .usage-table {
+        font-size: 0.85rem;
+      }
+
+      .usage-table th,
+      .usage-table td {
+        padding: 8px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <a href="../" class="back-link">← 返回首页</a>
+
+    <div class="header">
+      <h1>AI 用量面板</h1>
+      <div class="header-actions">
+        <button id="settings-btn" class="btn btn-secondary">⚙️ 设置</button>
+        <button id="refresh-btn" class="btn btn-primary">🔄 刷新</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">今日用量</h2>
+        <p id="status-message">正在加载供应商…</p>
+      </div>
+      <div id="usage-container">
+        <!-- Usage table will be rendered here -->
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">关于</h2>
+      <p style="color: var(--muted); line-height: 1.6;">
+        本面板用于统一查看您在多个平台的 AI API 用量。请在“设置”中配置对应平台的 API Key，即可开始追踪。
+      </p>
+      <p style="color: var(--muted); line-height: 1.6; margin-top: 12px;">
+        <strong>支持的供应商：</strong>DeepSeek、Xiaomi MiMo、火山引擎、ChatGPT Plus、Packycode
+      </p>
+      <p style="margin-top: 16px;">
+        <a href="docs/interface.md">供应商接口文档</a> — 了解如何添加新的供应商。
+      </p>
+    </div>
+
+    <footer style="padding-top: 24px; color: var(--muted); font-size: 0.92rem;">
+      <a href="../">← 返回首页</a>
+    </footer>
+  </main>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal"></div>
+
+  <!-- Import Map for ES Modules -->
+  <script type="importmap">
+  {
+    "imports": {
+      "./": "./",
+      "provider-registry": "./provider-registry.js",
+      "provider-base": "./provider-base.js",
+      "config": "./config.js",
+      "ui": "./ui.js",
+      "providers/": "./providers/"
+    }
+  }
+  </script>
+
+  <!-- Main Application -->
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

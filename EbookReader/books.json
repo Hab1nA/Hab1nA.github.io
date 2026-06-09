@@ -1,0 +1,12 @@
+{
+  "books": [
+    {
+      "id": "frankenstein",
+      "title": "Frankenstein; Or, The Modern Prometheus",
+      "author": "Mary Wollstonecraft Shelley",
+      "filename": "frankenstein.epub",
+      "cover": "",
+      "description": "《弗兰肯斯坦》是英国作家玛丽·雪莱于1818年创作的科幻小说，被认为是世界上第一部科幻小说。"
+    }
+  ]
+}

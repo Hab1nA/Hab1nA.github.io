@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>电子书阅读器</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link rel="stylesheet" href="libs/normalize.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css?family=Arbutus+Slab" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Lato:400,400i,700,700i" rel="stylesheet">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="description" content="一个简洁易用的在线电子书阅读器，支持 EPUB 格式。基于 ePubViewer 构建。">
+</head>
+
+<body>
+    <div class="app">
+        <div class="dictionary-wrapper hidden">
+            <div class="dictionary"></div>
+        </div>
+        <div class="sidebar-wrapper out">
+            <div class="sidebar">
+                <div class="tab-list">
+                    <a data-tab="toc" class="item">
+                        <i class="icon material-icons-outlined">list</i>
+                    </a>
+                    <a data-tab="search" class="item">
+                        <i class="icon material-icons-outlined">search</i>
+                    </a>
+                    <a data-tab="info" class="item">
+                        <i class="icon material-icons-outlined">info</i>
+                    </a>
+                    <a data-tab="settings" class="item">
+                        <i class="icon material-icons-outlined">settings</i>
+                    </a>
+                </div>
+                <div class="tab-container">
+                    <div class="tab" data-tab="toc">
+                        <div class="toc-list"></div>
+                    </div>
+                    <div class="tab search" data-tab="search">
+                        <div class="search-bar">
+                            <input type="text" autocomplete="off" placeholder="搜索书籍内容..." class="search-box">
+                            <button class="search-button">
+                                <i class="icon material-icons-outlined">search</i>
+                            </button>
+                        </div>
+                        <div class="search-results"></div>
+                    </div>
+                    <div class="tab info" data-tab="info">
+                        <div class="cover-wrapper">
+                            <img src="" alt="" class="cover">
+                        </div>
+                        <div class="title"></div>
+                        <div class="series-info">
+                            <span class="series-name"></span>
+                            <span class="divider"> - </span>
+                            <span class="series-index"></span>
+                        </div>
+                        <div class="author"></div>
+                        <div class="description"></div>
+                    </div>
+                    <div class="tab settings" data-tab="settings">
+                        <div class="setting">
+                            <div class="setting-label">主题</div>
+                            <div class="setting-content theme chips" data-chips="theme">
+                                <div class="theme chip" style="background: #fff; color: #000;" data-default="true" data-value="#fff;#000">A</div>
+                                <div class="theme chip" style="background: #000; color: #fff;" data-value="#000;#fff">A</div>
+                                <div class="theme chip" style="background: #333; color: #eee;" data-value="#333;#eee">A</div>
+                                <div class="theme chip" style="background: #f5deb3; color: #000;" data-value="#f5deb3;#000">A</div>
+                                <div class="theme chip" style="background: #111; color: #f5deb3;" data-value="#111;#f5deb3">A</div>
+                                <div class="theme chip" style="background: #111b21; color: #e8e8e8;" data-value="#111b21;#e8e8e8">A</div>
+                            </div>
+                        </div>
+                        <div class="setting">
+                            <div class="setting-label">字体</div>
+                            <div class="setting-content font chips" data-chips="font">
+                                <div class="font chip" style="font-family: 'Arial', Arimo, Liberation Sans, sans-serif;" data-value="'Arial', Arimo, Liberation Sans, sans-serif">Arial</div>
+                                <div class="font chip" style="font-family: 'Lato', sans-serif;" data-value="'Lato', sans-serif">Lato</div>
+                                <div class="font chip" style="font-family: 'Georgia', Liberation Serif, serif;" data-value="'Georgia', Liberation Serif, serif">Georgia</div>
+                                <div class="font chip" style="font-family: 'Times New Roman', Tinos, Liberation Serif, Times, serif;" data-value="'Times New Roman', Tinos, Liberation Serif, Times, serif"
+                                    data-default="true">Times New Roman</div>
+                                <div class="font chip" style="font-family: 'Arbutus Slab', serif;" data-value="'Arbutus Slab', serif">Arbutus Slab</div>
+                            </div>
+                        </div>
+                        <div class="setting">
+                            <div class="setting-label">字号</div>
+                            <div class="setting-content font-size chips" data-chips="font-size">
+                                <div class="size chip" style="font-size: 8pt" data-value="8pt">8</div>
+                                <div class="size chip" style="font-size: 9pt" data-value="9pt">9</div>
+                                <div class="size chip" style="font-size: 10pt" data-value="10pt">10</div>
+                                <div class="size chip" style="font-size: 11pt" data-default="true" data-value="11pt">11</div>
+                                <div class="size chip" style="font-size: 12pt" data-value="12pt">12</div>
+                                <div class="size chip" style="font-size: 14pt" data-value="14pt">14</div>
+                                <div class="size chip" style="font-size: 16pt" data-value="16pt">16</div>
+                                <div class="size chip" style="font-size: 18pt" data-value="18pt">18</div>
+                            </div>
+                        </div>
+                        <div class="setting">
+                            <div class="setting-label">行距</div>
+                            <div class="setting-content line-spacing chips" data-chips="line-spacing">
+                                <div class="size chip" data-value="1">1</div>
+                                <div class="size chip" data-value="1.2">1.2</div>
+                                <div class="size chip" data-value="1.4">1.4</div>
+                                <div class="size chip" data-default="true" data-value="1.6">1.6</div>
+                                <div class="size chip" data-value="1.8">1.8</div>
+                                <div class="size chip" data-value="2">2</div>
+                                <div class="size chip" data-value="2.3">2.3</div>
+                                <div class="size chip" data-value="2.6">2.6</div>
+                                <div class="size chip" data-value="3">3</div>
+                            </div>
+                        </div>
+                        <div class="setting">
+                            <div class="setting-label">边距</div>
+                            <div class="setting-content margin chips" data-chips="margin">
+                                <div class="size chip" data-value="0">0</div>
+                                <div class="size chip" data-value="1px">1px</div>
+                                <div class="size chip" data-value="2px">2px</div>
+                                <div class="size chip" data-value="3px">3px</div>
+                                <div class="size chip" data-value="4px">4px</div>
+                                <div class="size chip" data-default="true" data-value="5px">5px</div>
+                                <div class="size chip" data-value="7px">7px</div>
+                                <div class="size chip" data-value="9px">9px</div>
+                                <div class="size chip" data-value="12px">12px</div>
+                                <div class="size chip" data-value="15px">15px</div>
+                            </div>
+                        </div>
+                        <div class="setting">
+                            <div class="setting-label">进度显示</div>
+                            <div class="setting-content progress chips" data-chips="progress">
+                                <div class="chip" data-value="location" data-default="true">位置</div>
+                                <div class="chip" data-value="percentage" data-default="true">百分比</div>
+                                <div class="chip" data-value="chapter" data-default="true">章节</div>
+                                <div class="chip" data-value="bar" data-default="true">进度条</div>
+                                <div class="chip" data-value="none" data-default="true">无</div>
+                            </div>
+                        </div>
+                        <div class="setting">
+                            <div class="setting-label">全屏</div>
+                            <div class="setting-content">
+                                <a href="javascript:ePubViewer.doFullscreen();">全屏模式</a>
+                            </div>
+                        </div>
+                        <div class="setting">
+                            <div class="setting-label">重置</div>
+                            <div class="setting-content">
+                                <a href="javascript:void(0);" onclick="if(confirm('确定要重置所有设置吗？')){localStorage.clear();window.location.reload();}">重置所有设置</a>
+                            </div>
+                        </div>
+                        <div class="setting">
+                            <div class="setting-label">关于</div>
+                            <div class="setting-content">
+                                电子书阅读器 v1.0
+                                <br /> 基于
+                                <a href="https://github.com/pgaskin/ePubViewer">ePubViewer</a> 构建
+                                <br />
+                                <a href="https://github.com/Hab1nA/Hab1nA.github.io">项目主页</a> |
+                                <a href="https://github.com/pgaskin/ePubViewer/issues">原项目问题反馈</a>
+                                <br />
+                                <br /> 支持 Microsoft Edge 15+, Mozilla Firefox 50+, Chrome 50+, Safari 10+。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="error hidden">
+            <div class="error-title"></div>
+            <div class="error-description"></div>
+            <div class="error-info"></div>
+            <div class="error-dump"></div>
+        </div>
+        <div class="library-wrapper">
+            <div class="library">
+                <div class="library-header">
+                    <h1 class="library-title">📖 电子书阅读器</h1>
+                    <p class="library-subtitle">选择一本书开始阅读</p>
+                </div>
+                <div class="library-actions">
+                    <button class="library-open-btn" onclick="ePubViewer.doOpenBook()">
+                        <i class="icon material-icons-outlined">open_in_browser</i>
+                        <span>打开本地文件</span>
+                    </button>
+                </div>
+                <div class="library-grid" id="libraryGrid">
+                    <!-- 书籍卡片由 JS 动态生成 -->
+                </div>
+                <div class="library-empty hidden" id="libraryEmpty">
+                    <i class="icon material-icons-outlined" style="font-size:48px;color:var(--text-muted)">library_books</i>
+                    <p>暂无在线书籍，请点击上方按钮打开本地 EPUB 文件</p>
+                </div>
+            </div>
+        </div>
+        <div class="reader-wrapper hidden">
+            <div class="bar">
+                <div class="left">
+                    <button class="back-to-library" onclick="ePubViewer.backToLibrary()">
+                        <i class="icon material-icons-outlined">arrow_back</i>
+                    </button>
+                    <button class="open">
+                        <i class="icon material-icons-outlined">open_in_browser</i>
+                    </button>
+                </div>
+                <div class="title">
+                    <span class="book-title"></span>
+                    <span class="divider"> - </span>
+                    <span class="book-author"></span>
+                </div>
+                <div class="right">
+                    <button class="sidebar-button hidden" onclick="ePubViewer.doSidebar()">
+                        <i class="icon material-icons-outlined">menu</i>
+                    </button>
+                </div>
+            </div>
+            <div class="book">
+                <div class="empty-wrapper">
+                    <div class="empty">
+                        <div class="app-name">电子书阅读器</div>
+                        <div class="message">
+                            未知错误。如果此消息在几秒钟后仍未消失，请尝试使用其他浏览器（Chrome 或 Firefox），
+                            如果问题仍然存在，
+                            <a href="https://github.com/pgaskin/ePubViewer/issues">请在此报告</a>。
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bar">
+                <div class="left">
+                    <button class="prev hidden">
+                        <i class="icon material-icons-outlined">chevron_left</i>
+                    </button>
+                </div>
+                <div class="loc"></div>
+                <div class="right">
+                    <button class="next hidden">
+                        <i class="icon material-icons-outlined">chevron_right</i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function isIE(userAgent) {
+            userAgent = userAgent || navigator.userAgent;
+            return userAgent.indexOf("MSIE ") > -1 || userAgent.indexOf("Trident/") > -1;
+        }
+        if (isIE()) alert("电子书阅读器不支持 Internet Explorer，请使用 Chrome 或 Firefox 浏览器。");
+    </script>
+
+    <script>
+        if ('serviceWorker' in navigator) window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').then(reg => {
+                reg.onupdatefound = () => {
+                    const installingWorker = reg.installing;
+                    installingWorker.onstatechange = () => {
+                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            location.reload();
+                        }
+                    };
+                };
+            })
+        });
+        try {
+            window.caches.keys().then(keys => console.log("caches: " + keys.join(", "))).catch(err => console.log("error checking cache version"));
+        } catch (err) { }
+    </script>
+
+    <script src="polyfills/babel-polyfill.min.js"></script>
+    <script src="polyfills/fetch.js"></script>
+    <script src="polyfills/pep.min.js"></script>
+    <script src="libs/sanitize-html.min.js"></script>
+    <script src="libs/jszip.min.js"></script>
+    <script src="libs/epub.js"></script>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
